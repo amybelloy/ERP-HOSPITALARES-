@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Iniciar sistema (servidor)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/src/server.js",
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.env",
+      "env": { "PORT": "3000" },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Rodar testes",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["test"],
+      "cwd": "${workspaceFolder}/backend",
+      "env": { "TEST_DATABASE_URL": "postgres://hospital:hospital@localhost:5432/hospital_test" },
+      "console": "integratedTerminal"
+    }
+  ]
+}

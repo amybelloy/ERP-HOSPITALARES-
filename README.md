@@ -109,6 +109,22 @@ Dependências de runtime: `express`, `pg`, `bcryptjs`, `helmet`, `express-rate-l
 └── .env.example
 ```
 
+## Abrir no VS Code (no seu computador)
+
+1. Instale o **VS Code**, o **Git** e o **Docker Desktop**.
+2. Baixe o projeto (no terminal):
+   ```bash
+   git clone -b ccr-e617eb86-ggtqqb https://github.com/amybelloy/ERP-HOSPITALARES-.git
+   cd ERP-HOSPITALARES-
+   code .
+   ```
+   (Depois que o pull request for aprovado e mesclado na `main`, basta `git clone https://github.com/amybelloy/ERP-HOSPITALARES-.git`.)
+3. No VS Code: **Terminal → Executar tarefa…** → `Docker: subir banco e sistema` e depois `Docker: criar dados de demonstração`.
+4. Abra **http://localhost:3000** e entre com `admin@demo.local` / `Demo@12345`.
+
+Sem Docker: instale Node.js 20+ e PostgreSQL, crie o usuário/banco (ver abaixo), rode as tarefas `Local: instalar dependências`
+e `Local: criar banco e dados de demonstração` e use **Executar e depurar → Iniciar sistema (servidor)** (F5).
+
 ## Como executar
 
 ### Opção A — Docker Compose
