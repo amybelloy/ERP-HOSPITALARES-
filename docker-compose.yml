@@ -1,0 +1,46 @@
+# Ambiente de DESENVOLVIMENTO / DEMONSTRAÇÃO.
+#   docker compose up --build        -> http://localhost:3000
+#   docker compose run --rm seed     -> cria usuários e dados fictícios
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hospital
+      POSTGRES_PASSWORD: hospital
+      POSTGRES_DB: hospital_dev
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hospital -d hospital_dev"]
+      interval: 5s
+      retries: 10
+
+  app:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://hospital:hospital@db:5432/hospital_dev
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db: { condition: service_healthy }
+
+  seed:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://hospital:hospital@db:5432/hospital_dev
+    command: ["sh", "-c", "node backend/src/db/migrate.js && node backend/src/db/seed.js"]
+    depends_on:
+      db: { condition: service_healthy }
+    profiles: ["tools"]
+
+volumes:
+  pgdata:

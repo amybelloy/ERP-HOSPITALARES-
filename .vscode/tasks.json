@@ -1,0 +1,10 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Docker: subir banco e sistema", "type": "shell", "command": "docker compose up --build -d", "problemMatcher": [] },
+    { "label": "Docker: criar dados de demonstração", "type": "shell", "command": "docker compose run --rm seed", "problemMatcher": [] },
+    { "label": "Docker: parar", "type": "shell", "command": "docker compose down", "problemMatcher": [] },
+    { "label": "Local: instalar dependências", "type": "shell", "command": "npm install", "options": { "cwd": "${workspaceFolder}/backend" }, "problemMatcher": [] },
+    { "label": "Local: criar banco e dados de demonstração", "type": "shell", "command": "npm run setup", "options": { "cwd": "${workspaceFolder}/backend", "env": { "DATABASE_URL": "postgres://hospital:hospital@localhost:5432/hospital_dev" } }, "problemMatcher": [] }
+  ]
+}
