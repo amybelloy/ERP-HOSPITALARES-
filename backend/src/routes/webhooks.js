@@ -25,4 +25,9 @@ r.post('/card/:provider', raw, async (req, res) => {
   res.status(200).json(result);
 });
 
+r.post('/boleto/:provider{/:secret}', raw, async (req, res) => {
+  const result = await webhooks.handleBoletoWebhook(req.params.provider, { headers: req.headers, rawBody: req.body?.length ? req.body.toString('utf8') : '', params: req.params });
+  res.status(200).json(result);
+});
+
 module.exports = r;

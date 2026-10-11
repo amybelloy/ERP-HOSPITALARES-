@@ -107,9 +107,23 @@ r.post('/accounts/:id/billing', can('billing.manage'), async (req, res) => res.j
 r.get('/accounts/:id/settlement', can('settlement.view'), async (req, res) => res.json(await accounts.settlementHistory(id(req))));
 r.post('/accounts/:id/payments', can('payments.receive'), async (req, res) => res.status(201).json(await payments.start(id(req), req.body, req.ctx)));
 
+// ---------------- Faturamento de convênios (remessas) ----------------
+const billing = require('../services/billingService');
+r.get('/billing/convenio-accounts', can('billing.view'), async (req, res) => res.json(await billing.convenioAccounts(req.query)));
+r.get('/billing/batches', can('billing.view'), async (req, res) => res.json(await billing.list()));
+r.get('/billing/batches/:id', can('billing.view'), async (req, res) => res.json(await billing.get(id(req))));
+r.post('/billing/batches', can('billing.manage'), async (req, res) => res.status(201).json(await billing.createBatch(req.body, req.ctx)));
+r.post('/billing/batches/:id/send', can('billing.manage'), async (req, res) => res.json(await billing.sendBatch(id(req), req.body, req.ctx)));
+r.post('/billing/batches/:id/cancel', can('billing.manage'), async (req, res) => res.json(await billing.cancelBatch(id(req), req.body, req.ctx)));
+r.post('/billing/batches/:id/return', can('billing.manage'), async (req, res) => res.json(await billing.registerReturn(id(req), req.body, req.ctx)));
+
 // ---------------- Pagamentos ----------------
 r.get('/payments', can('payments.view'), async (req, res) => res.json(await payments.list(req.query)));
-r.get('/payments/:id', can('payments.view'), async (req, res) => res.json(await payments.getPayment(id(req))));
+r.get('/payments/:id', can('payments.view'), async (req, res) => {
+  const p = await payments.getPayment(id(req));
+  const { rows: [inst] } = await require('../db/pool').pool.query(`SELECT value FROM settings WHERE key = 'institution'`);
+  res.json({ ...p, institution: inst ? { name: inst.value.name, cnpj: inst.value.cnpj } : null }); // dados públicos do beneficiário (boleto)
+});
 r.post('/payments/:id/refresh', can('payments.receive', 'payments.view'), async (req, res) => res.json(await payments.refresh(id(req), req.ctx)));
 r.post('/payments/:id/confer', can('payments.confer'), async (req, res) => res.json(await payments.confer(id(req), req.body, req.ctx)));
 r.post('/payments/:id/cancel', can('payments.receive'), async (req, res) => res.json(await payments.cancel(id(req), req.body, req.ctx)));
@@ -182,6 +196,7 @@ r.get('/integrations', can('settings.manage', 'payments.receive', 'fiscal.view')
 // ---------------- Demonstração ----------------
 r.get('/demo/state', (req, res) => res.json(demo.state()));
 r.post('/demo/payments/:id/pix', can('demo.simulate'), async (req, res) => res.json(await demo.simulatePix(id(req), req.body, req.ctx)));
+r.post('/demo/payments/:id/boleto', can('demo.simulate'), async (req, res) => res.json(await demo.simulateBoleto(id(req), req.body, req.ctx)));
 r.post('/demo/payments/:id/card', can('demo.simulate'), async (req, res) => res.json(await demo.simulateCard(id(req), req.body, req.ctx)));
 r.post('/demo/failure', can('demo.simulate'), async (req, res) => res.json(await demo.setFailure(req.body, req.ctx)));
 r.post('/demo/fiscal-outcome', can('demo.simulate'), async (req, res) => res.json(await demo.setFiscalOutcome(req.body, req.ctx)));

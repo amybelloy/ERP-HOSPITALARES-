@@ -53,6 +53,25 @@ const config = {
     },
   },
 
+  boleto: {
+    provider: env.BOLETO_PROVIDER || 'DEMO_BOLETO', // DEMO_BOLETO | SANTANDER_BOLETO
+    defaultDueDays: Number(env.BOLETO_DUE_DAYS || 3),
+    webhookSecret: env.BOLETO_WEBHOOK_SECRET || '',
+    santander: {
+      baseUrl: env.SANTANDER_BOLETO_BASE_URL || '',
+      tokenUrl: env.SANTANDER_BOLETO_TOKEN_URL || '',
+      clientId: env.SANTANDER_CLIENT_ID || '',
+      clientSecret: env.SANTANDER_CLIENT_SECRET || '',
+      certPath: env.SANTANDER_CERT_PATH || '',
+      keyPath: env.SANTANDER_KEY_PATH || '',
+      certPassphrase: env.SANTANDER_CERT_PASSPHRASE || '',
+      workspaceId: env.SANTANDER_BOLETO_WORKSPACE || '',
+      beneficiaryCode: env.SANTANDER_BOLETO_BENEFICIARIO || '',
+      environment: env.SANTANDER_BOLETO_AMBIENTE || 'TESTE',
+      timeoutMs: Number(env.SANTANDER_TIMEOUT_MS || 15000),
+    },
+  },
+
   card: {
     provider: env.CARD_PROVIDER || 'DEMO_CARD', // DEMO_CARD | GETNET
     callbackSecret: env.CARD_CALLBACK_SECRET || 'demo-card-secret-apenas-desenvolvimento',

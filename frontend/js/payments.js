@@ -3,7 +3,7 @@ import { api } from './api.js';
 import { html, render, $, modal, money, centsToInput, toCents, datetime, label, badge, toast, busy, formDialog, confirmDialog } from './ui.js';
 import { can, state } from './state.js';
 
-const METHODS = [['PIX', 'Pix'], ['CARTAO_CREDITO', 'Cartão de crédito'], ['CARTAO_DEBITO', 'Cartão de débito'], ['DINHEIRO', 'Dinheiro'], ['OUTRO', 'Outro meio']];
+const METHODS = [['PIX', 'Pix'], ['CARTAO_CREDITO', 'Cartão de crédito'], ['CARTAO_DEBITO', 'Cartão de débito'], ['DINHEIRO', 'Dinheiro'], ['BOLETO', 'Boleto bancário'], ['OUTRO', 'Outro meio']];
 
 /** Tela de recebimento vinculada à conta. */
 export function openReceive(account, onChange) {
@@ -24,6 +24,7 @@ export function openReceive(account, onChange) {
       <div class="hidden" data-inst><label>Parcelas</label><select name="installments">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => html`<option value="${n}">${n}x</option>`)}</select></div>
       <div class="hidden" data-ref><label>NSU / código de autorização *</label><input name="manual_reference" placeholder="Conforme comprovante do terminal"></div>
       <div class="hidden" data-other><label>Descrição do meio *</label><input name="method_label" placeholder="Ex.: transferência TED"></div>
+      <div class="hidden" data-due><label>Vencimento do boleto</label><input type="date" name="due_date" value="${new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10)}"></div>
     </div>
     <div class="alert info mt small" data-hint></div>`);
   const sel = (n) => body.querySelector(`[name=${n}]`);
@@ -33,7 +34,10 @@ export function openReceive(account, onChange) {
     $('[data-inst]', body).classList.toggle('hidden', m !== 'CARTAO_CREDITO');
     $('[data-ref]', body).classList.toggle('hidden', !manualCard);
     $('[data-other]', body).classList.toggle('hidden', m !== 'OUTRO');
-    $('[data-hint]', body).textContent = m === 'PIX'
+    $('[data-due]', body).classList.toggle('hidden', m !== 'BOLETO');
+    $('[data-hint]', body).textContent = m === 'BOLETO'
+      ? 'Será registrado um boleto no banco em nome do paciente. A conta só é quitada quando o banco confirmar o pagamento.'
+      : m === 'PIX'
       ? 'Será gerada uma cobrança Pix (QR Code dinâmico / Copia e Cola). A conta só é quitada após a confirmação do banco.'
       : card && !manualCard ? 'O valor será enviado ao terminal. A aprovação é registrada automaticamente quando o terminal/adquirente confirmar.'
         : 'Pagamento informado manualmente: ficará AGUARDANDO CONFERÊNCIA por outro usuário autorizado antes de contar na conta. Comprovantes fotografados não são aceitos como confirmação única.';
@@ -49,6 +53,7 @@ export function openReceive(account, onChange) {
         method: m, amount_cents: cents, card_mode: m.startsWith('CARTAO') ? sel('card_mode').value : undefined,
         installments: m === 'CARTAO_CREDITO' ? Number(sel('installments').value) : 1,
         manual_reference: sel('manual_reference').value || undefined, method_label: sel('method_label').value || undefined,
+        due_date: m === 'BOLETO' ? sel('due_date').value || undefined : undefined,
       });
       close();
       openPaymentFlow(p.id, onChange);
@@ -74,13 +79,22 @@ export async function openPaymentFlow(paymentId, onChange) {
             <button class="btn sm" data-copy>Copiar código</button>
             <div class="small muted">Expira em: ${datetime(p.expires_at)} · txid <span class="mono">${p.provider_charge_id}</span></div>
             <div class="waiting"><div class="spinner"></div> Aguardando confirmação do banco…</div></div></div>` : ''}
+      ${p.method === 'BOLETO' && p.status === 'PENDENTE' ? html`<div class="stack"><div><label>Linha digitável</label><div class="copy-paste mono">${p.boleto_digitable_line || '—'}</div></div>
+          <div class="small muted">Nosso número ${p.provider_charge_id} · vencimento ${p.boleto_due_date ? new Date(`${p.boleto_due_date.slice(0, 10)}T12:00:00`).toLocaleDateString('pt-BR') : '—'}</div>
+          <div class="btn-group"><button class="btn sm" data-print-boleto>Imprimir boleto</button><button class="btn sm" data-copy-line>Copiar linha</button></div>
+          <div class="waiting"><div class="spinner"></div> Aguardando confirmação de pagamento pelo banco…</div></div>` : ''}
       ${p.status === 'PROCESSANDO' ? html`<div class="waiting"><div class="spinner"></div> Transação enviada ao terminal. Aguardando o cliente e a resposta da adquirente…</div>` : ''}
       ${p.status === 'AGUARDANDO_CONFERENCIA' ? html`<div class="alert warn">Pagamento registrado manualmente${p.manual_reference ? ` (ref. ${p.manual_reference})` : ''}. Aguardando conferência por outro usuário com permissão. A conta ainda NÃO foi atualizada.</div>` : ''}
       ${p.status === 'CONFIRMADO' ? html`<div class="alert ok">Pagamento confirmado (${label(p.confirmation_source)}) em ${datetime(p.confirmed_at)}. Conta: ${badge(p.financial_status)} — recebido ${money(p.account_received_cents)} de ${money(p.account_total_cents)}.</div>` : ''}
       ${['REJEITADO', 'CANCELADO', 'EXPIRADO', 'DIVERGENTE', 'FALHA_COMUNICACAO'].includes(p.status) ? html`<div class="alert danger">${label(p.status)}${p.status_reason ? `: ${p.status_reason}` : ''}. A conta não foi quitada por este pagamento.</div>` : ''}
       ${!done && p.is_demo && can('demo.simulate') ? html`<div class="card mt"><h3>Simulação (somente demonstração)</h3><div class="btn-group">
+          ${p.method === 'BOLETO' ? html`<button class="btn demo" data-sim-boleto>Simular pagamento do boleto</button>` : ''}
           ${p.method === 'PIX' ? html`<button class="btn demo" data-sim="PAGAR">Simular pagamento Pix pelo pagador</button><button class="btn demo" data-sim="EXPIRAR">Simular expiração</button>` : ''}
-          ${p.status === 'PROCESSANDO' ? html`<button class="btn demo" data-card="APROVADA">Simular cartão APROVADO</button><button class="btn demo" data-card="NEGADA">Simular cartão NEGADO</button>` : ''}
+          ${p.method === 'BOLETO' && p.status === 'PENDENTE' ? html`<div class="stack"><div><label>Linha digitável</label><div class="copy-paste mono">${p.boleto_digitable_line || '—'}</div></div>
+          <div class="small muted">Nosso número ${p.provider_charge_id} · vencimento ${p.boleto_due_date ? new Date(`${p.boleto_due_date.slice(0, 10)}T12:00:00`).toLocaleDateString('pt-BR') : '—'}</div>
+          <div class="btn-group"><button class="btn sm" data-print-boleto>Imprimir boleto</button><button class="btn sm" data-copy-line>Copiar linha</button></div>
+          <div class="waiting"><div class="spinner"></div> Aguardando confirmação de pagamento pelo banco…</div></div>` : ''}
+      ${p.status === 'PROCESSANDO' ? html`<button class="btn demo" data-card="APROVADA">Simular cartão APROVADO</button><button class="btn demo" data-card="NEGADA">Simular cartão NEGADO</button>` : ''}
         </div><p class="small muted">A simulação altera apenas o provedor simulado e dispara o mesmo webhook/consulta usado em produção.</p></div>` : ''}
     `);
     if (done) stop();
@@ -89,6 +103,9 @@ export async function openPaymentFlow(paymentId, onChange) {
   body.addEventListener('click', async (e) => {
     const t = e.target.closest('button'); if (!t) return;
     if (t.dataset.copy !== undefined) { await navigator.clipboard?.writeText(p.pix_copy_paste); toast('Código copiado.', 'ok'); }
+    if (t.dataset.copyLine !== undefined) { await navigator.clipboard?.writeText((p.boleto_digitable_line || '').replace(/\D/g, '')); toast('Linha copiada.', 'ok'); }
+    if (t.dataset.printBoleto !== undefined) { const m = await import('./pages/boletos.js'); m.printBoleto(p.id); }
+    if (t.dataset.simBoleto !== undefined) await busy(t, async () => { const r = await api.post(`/demo/payments/${paymentId}/boleto`, {}); p = r.payment; draw(); onChange?.(); });
     if (t.dataset.sim) await busy(t, async () => { const r = await api.post(`/demo/payments/${paymentId}/pix`, { outcome: t.dataset.sim }); p = r.payment; draw(); onChange?.(); });
     if (t.dataset.card) await busy(t, async () => { const r = await api.post(`/demo/payments/${paymentId}/card`, { outcome: t.dataset.card }); p = r.payment; draw(); onChange?.(); });
   });

@@ -60,7 +60,7 @@ const LABELS = {
   AGENDADO: 'Agendado', CONFIRMADO_AG: 'Confirmado', ATENDIDO: 'Atendido', FALTOU: 'Faltou', RESOLVIDA: 'Resolvida', JUSTIFICADA: 'Justificada',
   EM_ANALISE: 'Em análise', CONCILIADO: 'Conciliado', SEM_CONTA: 'Sem conta', SEM_TRANSACAO_BANCARIA: 'Sem transação bancária',
   VALOR_DIVERGENTE: 'Valor divergente', DUPLICADA: 'Duplicada', ESTORNO: 'Estorno', PIX: 'Pix', CARTAO_CREDITO: 'Cartão de crédito',
-  CARTAO_DEBITO: 'Cartão de débito', DINHEIRO: 'Dinheiro', OUTRO: 'Outro', PARTICULAR: 'Particular', CONVENIO: 'Convênio',
+  CARTAO_DEBITO: 'Cartão de débito', DINHEIRO: 'Dinheiro', OUTRO: 'Outro', BOLETO: 'Boleto', CONVENIO: 'Repasse de convênio', PARTICULAR: 'Particular', CONVENIO: 'Convênio',
   PROCESSADO: 'Processado', DUPLICADO: 'Duplicado', ERRO: 'Erro', INVALIDO: 'Inválido', SEM_COBRANCA: 'Sem cobrança', RECEBIDO: 'Recebido',
   WEBHOOK_VALIDADO_CONSULTA: 'Webhook validado + consulta ao banco', CONSULTA_PROVEDOR: 'Consulta ao provedor', TERMINAL_PROVEDOR: 'Terminal/adquirente',
   CONFERENCIA_MANUAL: 'Conferência manual autorizada', ATIVO: 'Ativo', INATIVO: 'Inativo',

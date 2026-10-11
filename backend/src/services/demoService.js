@@ -46,13 +46,24 @@ async function simulateCard(paymentId, body, ctx) {
   return { callback: result, payment: await payments.getPayment(paymentId) };
 }
 
+async function simulateBoleto(paymentId, body, ctx) {
+  ensureDemo();
+  const { rows: [p] } = await pool.query('SELECT * FROM payments WHERE id = $1', [paymentId]);
+  if (!p) throw notFound('Pagamento não encontrado.');
+  if (p.provider !== 'DEMO_BOLETO') throw unprocessable('Simulação disponível apenas para boletos de DEMONSTRAÇÃO.');
+  await audit(null, ctx, 'DEMO_SIMULACAO_BOLETO', 'payments', paymentId, {});
+  const wh = await registry.boleto.DEMO_BOLETO.simulatePayment(p.provider_charge_id, { amountCents: body.amount_cents });
+  const result = await webhooks.handleBoletoWebhook('DEMO_BOLETO', { headers: wh.headers, rawBody: wh.body, params: {} });
+  return { webhook: result, payment: await payments.getPayment(paymentId), webhookBody: wh.body, webhookHeaders: wh.headers };
+}
+
 async function setFailure(body, ctx) {
   ensureDemo();
   const v = validator(body);
-  const target = v.oneOf('target', ['pix', 'card', 'fiscal'], { required: true });
+  const target = v.oneOf('target', ['pix', 'card', 'fiscal', 'boleto'], { required: true });
   const enabled = v.bool('enabled', { def: false });
   v.done();
-  const map = { pix: registry.pix.DEMO_PIX, card: registry.card.DEMO_CARD, fiscal: registry.fiscal.DEMO_FISCAL };
+  const map = { pix: registry.pix.DEMO_PIX, card: registry.card.DEMO_CARD, fiscal: registry.fiscal.DEMO_FISCAL, boleto: registry.boleto.DEMO_BOLETO };
   map[target].failureMode = enabled;
   await audit(null, ctx, 'DEMO_FALHA_PROVEDOR', 'demo', target, { enabled });
   return state();
@@ -85,8 +96,9 @@ function state() {
     pixFailure: registry.pix.DEMO_PIX.failureMode,
     cardFailure: registry.card.DEMO_CARD.failureMode,
     fiscalFailure: registry.fiscal.DEMO_FISCAL.failureMode,
+    boletoFailure: registry.boleto.DEMO_BOLETO.failureMode,
     fiscalNextOutcome: registry.fiscal.DEMO_FISCAL.nextOutcome,
   };
 }
 
-module.exports = { simulatePix, simulateCard, setFailure, setFiscalOutcome, orphanPix, state };
+module.exports = { simulatePix, simulateCard, simulateBoleto, setFailure, setFiscalOutcome, orphanPix, state };

@@ -11,7 +11,7 @@ const crypto = require('crypto');
 const { pool } = require('../db/pool');
 const { systemCtx } = require('./audit');
 const payments = require('./paymentService');
-const { pixProvider, cardProvider } = require('../integrations');
+const { pixProvider, cardProvider, boletoProvider } = require('../integrations');
 const { unauthorized, badRequest } = require('../lib/errors');
 
 const hash = (s) => crypto.createHash('sha256').update(s || '').digest('hex');
@@ -36,6 +36,7 @@ async function processEvent(event) {
   try {
     let r;
     if (event.payload.kind === 'pix') r = await payments.syncPixCharge(event.provider, event.payload.txid, 'WEBHOOK_VALIDADO_CONSULTA', ctx);
+    else if (event.payload.kind === 'boleto') r = await payments.syncBoleto(event.provider, event.payload.ourNumber, 'WEBHOOK_VALIDADO_CONSULTA', ctx);
     else r = await payments.syncCardTransaction(event.provider, event.payload.transactionId, 'TERMINAL_PROVEDOR', ctx);
     const status = r.result === 'SEM_COBRANCA' ? 'SEM_COBRANCA' : (r.result === 'DUPLICADO' ? 'DUPLICADO' : 'PROCESSADO');
     await finish(event.id, status, r.result === 'NAO_ENCONTRADA_NO_PROVEDOR' ? 'Cobrança não encontrada na consulta ao provedor' : null);
@@ -93,6 +94,25 @@ async function handleCardCallback(providerName, { headers, rawBody }) {
   return { received: true, results: [await processEvent(event)] };
 }
 
+async function handleBoletoWebhook(providerName, { headers, rawBody, params }) {
+  const provider = boletoProvider(providerName);
+  let body;
+  try { body = JSON.parse(rawBody || '{}'); } catch (_) { body = {}; }
+  if (!provider.verifyWebhook({ headers, rawBody, params })) {
+    await storeEvent(providerName, `invalid:${hash(rawBody)}`, false, headers, { body, kind: 'boleto' }, 'INVALIDO');
+    throw unauthorized('Notificação com autenticação inválida.');
+  }
+  const ourNumber = body.nossoNumero || body.bankNumber || body.ourNumber;
+  if (!ourNumber) throw badRequest('Notificação sem nosso número.');
+  const key = `boleto:${ourNumber}:${body.situacao || body.status || 'NA'}`;
+  const { event, isNew } = await storeEvent(providerName, key, true, headers, { kind: 'boleto', ourNumber: String(ourNumber), notified: body });
+  if (!isNew && event.status !== 'ERRO') {
+    await pool.query('UPDATE payment_webhook_events SET attempts = attempts + 1 WHERE id = $1', [event.id]);
+    return { received: true, results: [{ eventId: event.id, status: 'DUPLICADO' }] };
+  }
+  return { received: true, results: [await processEvent(event)] };
+}
+
 /** Reprocessa eventos que falharam (ex.: banco fora do ar). Executado periodicamente e sob demanda. */
 async function retryFailed({ maxAttempts = 10 } = {}) {
   const { rows } = await pool.query(
@@ -109,4 +129,4 @@ async function list({ status, limit = 100 } = {}) {
   return rows;
 }
 
-module.exports = { handlePixWebhook, handleCardCallback, retryFailed, list };
+module.exports = { handlePixWebhook, handleCardCallback, handleBoletoWebhook, retryFailed, list };

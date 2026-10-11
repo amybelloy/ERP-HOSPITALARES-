@@ -51,6 +51,21 @@ devolver → conciliar o período. Confirme também limites de taxa (rate limit)
 
 ---
 
+## 1b. Boleto — Santander (`SantanderBoletoProvider`)
+
+- Registro do boleto em nome do paciente (pagador), com nosso número, vencimento e valor; o banco devolve
+  código de barras e linha digitável.
+- Liquidação confirmada por **webhook autenticado + consulta ao banco** (mesma regra do Pix), em
+  `POST /api/webhooks/boleto/SANTANDER_BOLETO/{BOLETO_WEBHOOK_SECRET}`; "Consultar status" reconsulta.
+- Cancelamento = baixa no banco. Estorno de boleto pago é feito por devolução manual (TED/Pix) auditada.
+- Variáveis: `BOLETO_PROVIDER=SANTANDER_BOLETO`, `SANTANDER_BOLETO_BASE_URL`, `SANTANDER_BOLETO_TOKEN_URL`,
+  `SANTANDER_BOLETO_WORKSPACE`, `SANTANDER_BOLETO_BENEFICIARIO`, `BOLETO_WEBHOOK_SECRET` (+ credenciais e certificado do Santander).
+  Os caminhos HTTP estão marcados como pontos de ajuste — confirme na API de cobrança contratada.
+- Em demonstração, o código de barras e a linha digitável seguem o padrão FEBRABAN (DV módulo 11 e 10,
+  fator de vencimento com o reinício de 22/02/2025), mas o boleto não é registrado em banco algum.
+
+---
+
 ## 2. Cartão — Getnet (`GetnetProvider`)
 
 A Getnet possui mais de um produto para captura presencial; a forma de integração depende do contrato:

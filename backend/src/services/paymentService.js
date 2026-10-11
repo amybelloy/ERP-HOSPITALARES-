@@ -13,7 +13,7 @@ const config = require('../config');
 const { pool, withTransaction } = require('../db/pool');
 const { audit } = require('./audit');
 const { recalculateAccount, lockAccount } = require('./settlementService');
-const { pixProvider, cardProvider } = require('../integrations');
+const { pixProvider, cardProvider, boletoProvider } = require('../integrations');
 const { newTxid } = require('../integrations/pix/PixProvider');
 const { validator } = require('../lib/validate');
 const { has } = require('../middleware/auth');
@@ -45,7 +45,8 @@ async function lockPayment(c, paymentId) {
 // ---------------------------------------------------------------------------
 async function start(accountId, body, ctx) {
   const v = validator(body);
-  const method = v.oneOf('method', ['PIX', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'DINHEIRO', 'OUTRO'], { required: true, label: 'Forma de pagamento' });
+  const method = v.oneOf('method', ['PIX', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'DINHEIRO', 'OUTRO', 'BOLETO', 'CONVENIO'], { required: true, label: 'Forma de pagamento' });
+  const dueDate = v.date('due_date', { label: 'Vencimento' });
   const amount = v.cents('amount_cents', { required: true, label: 'Valor' });
   const installments = v.int('installments', { min: 1, max: 12 }) || 1;
   const cardMode = v.oneOf('card_mode', ['TERMINAL', 'MANUAL']) || 'TERMINAL';
@@ -54,11 +55,15 @@ async function start(accountId, body, ctx) {
   if (CARD_METHODS.includes(method) && cardMode === 'MANUAL' && !manualReference) v.fail('manual_reference', 'Informe o NSU/código de autorização do comprovante do terminal.');
   if (method === 'OUTRO' && !methodLabel) v.fail('method_label', 'Descreva o meio de pagamento.');
   if (method === 'CARTAO_DEBITO' && installments > 1) v.fail('installments', 'Débito não permite parcelamento.');
+  if (method === 'CONVENIO' && !manualReference) v.fail('manual_reference', 'Informe a remessa/guia do repasse do convênio.');
+  if (method === 'BOLETO' && dueDate && dueDate < new Date().toISOString().slice(0, 10)) v.fail('due_date', 'Vencimento não pode ser no passado.');
   v.done();
 
-  const usesProvider = method === 'PIX' || (CARD_METHODS.includes(method) && cardMode === 'TERMINAL');
-  const provider = method === 'PIX' ? pixProvider() : (usesProvider ? cardProvider() : null);
-  const txid = method === 'PIX' ? newTxid() : null;
+  const usesProvider = method === 'PIX' || method === 'BOLETO' || (CARD_METHODS.includes(method) && cardMode === 'TERMINAL');
+  const provider = method === 'PIX' ? pixProvider() : method === 'BOLETO' ? boletoProvider() : (usesProvider ? cardProvider() : null);
+  // txid (Pix) ou nosso número (boleto): identificador da cobrança no banco
+  const txid = method === 'PIX' ? newTxid() : method === 'BOLETO' ? `${Date.now()}${Math.floor(Math.random() * 90 + 10)}`.slice(-13) : null;
+  const due = method === 'BOLETO' ? (dueDate || new Date(Date.now() + config.boleto.defaultDueDays * 86400000).toISOString().slice(0, 10)) : null;
 
   // 1) Registra a intenção dentro de transação, validando o saldo disponível
   const payment = await withTransaction(async (c) => {
@@ -72,12 +77,12 @@ async function start(accountId, body, ctx) {
       throw unprocessable(`Valor (${formatBRL(amount)}) maior que o saldo disponível para cobrança (${formatBRL(available)}). Verifique cobranças em andamento.`);
     }
     let status; let providerName;
-    if (usesProvider) { status = method === 'PIX' ? 'PENDENTE' : 'PROCESSANDO'; providerName = provider.name; }
+    if (usesProvider) { status = ['PIX', 'BOLETO'].includes(method) ? 'PENDENTE' : 'PROCESSANDO'; providerName = provider.name; }
     else { status = 'AGUARDANDO_CONFERENCIA'; providerName = 'MANUAL'; }
     const { rows: [p] } = await c.query(
-      `INSERT INTO payments (account_id, method, method_label, amount_cents, installments, status, provider, provider_charge_id, manual_reference, is_demo, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-      [accountId, method, methodLabel, amount, installments, status, providerName, txid, manualReference, !!provider?.isDemo, ctx.user.id]);
+      `INSERT INTO payments (account_id, method, method_label, amount_cents, installments, status, provider, provider_charge_id, manual_reference, is_demo, created_by, boleto_due_date)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      [accountId, method, methodLabel, amount, installments, status, providerName, txid, manualReference, !!provider?.isDemo, ctx.user.id, due]);
     await audit(c, ctx, 'RECEBIMENTO_INICIADO', 'payments', p.id, { conta_id: accountId, metodo: method, valor_cents: amount, provedor: providerName, modo_cartao: CARD_METHODS.includes(method) ? cardMode : undefined });
     return p;
   });
@@ -91,7 +96,14 @@ async function start(accountId, body, ctx) {
 
   // 2) Chama o provedor fora da transação (não segura bloqueio durante I/O externo)
   try {
-    if (method === 'PIX') {
+    if (method === 'BOLETO') {
+      const { rows: [acc] } = await pool.query(
+        'SELECT ac.number, p.name, p.cpf, p.address, p.district, p.city, p.state, p.zip_code FROM accounts ac JOIN patients p ON p.id = ac.patient_id WHERE ac.id = $1', [accountId]);
+      const b = await provider.register({ ourNumber: txid, amountCents: amount, dueDate: due, description: `Conta ${acc.number}`,
+        payer: { name: acc.name, cpf: acc.cpf, address: acc.address, district: acc.district, city: acc.city, state: acc.state, zipCode: acc.zip_code } });
+      await pool.query(`UPDATE payments SET boleto_barcode = $2, boleto_digitable_line = $3, expires_at = ($4::date + interval '1 day'), updated_at = now() WHERE id = $1`,
+        [payment.id, b.barcode, b.digitableLine, due]);
+    } else if (method === 'PIX') {
       const { rows: [acc] } = await pool.query(
         'SELECT ac.number, p.name, p.cpf FROM accounts ac JOIN patients p ON p.id = ac.patient_id WHERE ac.id = $1', [accountId]);
       const charge = await provider.createCharge({
@@ -236,6 +248,27 @@ async function syncCardTransaction(providerName, transactionId, source, ctx) {
   return { result: 'PROCESSANDO', payment };
 }
 
+// ---------------------------------------------------------------------------
+// Boleto: liquidação confirmada pela CONSULTA ao banco
+// ---------------------------------------------------------------------------
+async function syncBoleto(providerName, ourNumber, source, ctx) {
+  const provider = boletoProvider(providerName);
+  const { rows: [payment] } = await pool.query('SELECT * FROM payments WHERE provider = $1 AND provider_charge_id = $2', [providerName, ourNumber]);
+  if (!payment) return { result: 'SEM_COBRANCA' };
+  const b = await provider.getBoleto(ourNumber);
+  if (!b) return { result: 'NAO_ENCONTRADA_NO_PROVEDOR', payment };
+  if (b.status === 'PAGO') {
+    return withTransaction((c) => applyConfirmation(c, payment.id, {
+      providerTransactionId: `BOL-${ourNumber}`, amountCents: b.paidAmountCents ?? b.amountCents, occurredAt: b.paidAt, source, raw: { ourNumber, paidAt: b.paidAt },
+    }, ctx));
+  }
+  if (b.status === 'BAIXADO' && IN_FLIGHT.includes(payment.status)) {
+    const p = await withTransaction((c) => markStatus(c, payment.id, 'CANCELADO', 'Boleto baixado no banco', 'CANCELAMENTO', `BAIXA-${ourNumber}`, ctx));
+    return { result: 'CANCELADO', payment: p };
+  }
+  return { result: 'PENDENTE', payment };
+}
+
 /** Botão "Consultar status": reconsulta o provedor para o pagamento. */
 async function refresh(paymentId, ctx) {
   const { rows: [p] } = await pool.query('SELECT * FROM payments WHERE id = $1', [paymentId]);
@@ -243,7 +276,8 @@ async function refresh(paymentId, ctx) {
   if (!p.provider_charge_id || p.provider === 'MANUAL') return { result: 'SEM_INTEGRACAO', payment: await getPayment(paymentId) };
   const r = p.method === 'PIX'
     ? await syncPixCharge(p.provider, p.provider_charge_id, 'CONSULTA_PROVEDOR', ctx)
-    : await syncCardTransaction(p.provider, p.provider_charge_id, 'TERMINAL_PROVEDOR', ctx);
+    : p.method === 'BOLETO' ? await syncBoleto(p.provider, p.provider_charge_id, 'CONSULTA_PROVEDOR', ctx)
+      : await syncCardTransaction(p.provider, p.provider_charge_id, 'TERMINAL_PROVEDOR', ctx);
   return { result: r.result, payment: await getPayment(paymentId) };
 }
 
@@ -298,6 +332,7 @@ async function cancel(paymentId, body, ctx) {
     if (r.payment.status === 'CONFIRMADO') throw unprocessable('A cobrança já foi liquidada no provedor; o pagamento foi confirmado e não pode ser cancelado.');
     if (!IN_FLIGHT.includes(r.payment.status)) return r.payment;
     if (p.method === 'PIX') await pixProvider(p.provider).cancelCharge(p.provider_charge_id);
+    else if (p.method === 'BOLETO') await boletoProvider(p.provider).cancel(p.provider_charge_id);
     else await cardProvider(p.provider).cancelTransaction({ transactionId: p.provider_charge_id, amountCents: p.amount_cents });
   }
   await withTransaction((c) => markStatus(c, paymentId, 'CANCELADO', reason, 'CANCELAMENTO', `CANC-${paymentId}`, ctx));
@@ -341,8 +376,8 @@ async function refund(paymentId, body, ctx) {
 
   await audit(null, ctx, 'ESTORNO_SOLICITADO', 'payments', paymentId, { valor_cents: amount, motivo: reason });
 
-  if (p.provider === 'MANUAL') {
-    // Devolução em espécie / estorno manual: operação manual autorizada e auditada.
+  if (p.provider === 'MANUAL' || p.method === 'BOLETO') {
+    // Devolução em espécie / por transferência (boleto não tem estorno pelo banco): estorno manual: operação manual autorizada e auditada.
     await withTransaction((c) => applyRefund(c, paymentId, { refundId: `MANUAL-EST-${paymentId}-${Date.now()}`, amountCents: amount, source: 'MANUAL_AUTORIZADO', raw: { motivo: reason } }, ctx));
     return { status: 'ESTORNADO', payment: await getPayment(paymentId) };
   }
@@ -453,10 +488,11 @@ async function list(f = {}) {
   if (f.to) add("py.created_at < (?::date + interval '1 day')", f.to);
   const { rows } = await pool.query(
     `SELECT py.id, py.account_id, py.method, py.amount_cents, py.refunded_cents, py.status, py.provider, py.confirmation_source, py.confirmed_at, py.created_at, py.is_demo,
+            py.boleto_due_date, py.boleto_digitable_line, py.provider_charge_id, py.manual_reference,
             ac.number AS account_number, pa.name AS patient_name, u.name AS created_by_name
        FROM payments py JOIN accounts ac ON ac.id = py.account_id JOIN patients pa ON pa.id = ac.patient_id JOIN users u ON u.id = py.created_by
       ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY py.id DESC LIMIT 300`, params);
   return rows;
 }
 
-module.exports = { start, applyConfirmation, applyRefund, syncPixCharge, syncCardTransaction, refresh, confer, cancel, refund, reassign, getPayment, receipt, list, IN_FLIGHT };
+module.exports = { start, applyConfirmation, applyRefund, syncPixCharge, syncCardTransaction, syncBoleto, refresh, confer, cancel, refund, reassign, getPayment, receipt, list, IN_FLIGHT };

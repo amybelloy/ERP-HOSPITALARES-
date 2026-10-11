@@ -24,6 +24,25 @@ Paciente (prontuário único) ──► Atendimento (n por paciente) ──► C
 > estão implementadas como adaptadores e são ativadas por variáveis de ambiente — veja
 > [docs/INTEGRACOES.md](docs/INTEGRACOES.md).
 
+## Navegação
+
+O menu lateral é organizado por **áreas**, como nos ERPs hospitalares de mercado, com uma **pesquisa no topo**:
+digite, por exemplo, "médica", "boleto" ou "glosa" e vá direto à tela (atalho **Ctrl+K**; Enter abre o
+primeiro resultado). O botão ☰ recolhe o menu para mostrar só os ícones.
+
+| Área | Telas |
+|---|---|
+| **Cadastros** | Pacientes · Prontuários e histórico · Médicos e profissionais · Fornecedores · Convênios e planos · Procedimentos e exames |
+| **Atendimento** | Agendamento · Atendimentos · Abrir novo atendimento |
+| **Clínica e Assistencial** (parte médica) | Prontuário eletrônico (PEP) · Mapa de leitos · Classificação de risco · Área de enfermagem |
+| **Financeiro** | Lançamento de contas · Pagamentos (recebimento e caixa) · Quitação de contas · Contas a receber · Contas em aberto (sem pagamento) · Contas fechadas · Emissão de notas fiscais · **Emissão de boletos** · Conciliação bancária · Relatórios financeiros |
+| **Faturamento** (convênios) | Contas de convênio · **Remessas e retorno (glosas)** · Conferência e fechamento de contas |
+| **Administração** | Usuários e permissões · Auditoria · Configurações e integrações |
+
+**Faturamento de convênios:** contas de convênio conferidas e fechadas entram em uma remessa (por operadora e
+competência) → envio (protocolo) → retorno com valor pago e glosa (com motivo) por conta. O valor pago vira um
+repasse "aguardando conferência" do financeiro; a glosa permanece como saldo da conta.
+
 ## Módulos
 
 | Área | Módulos |

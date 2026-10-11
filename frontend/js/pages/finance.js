@@ -137,3 +137,43 @@ export async function billing(host) {
   $('[data-load]', el).addEventListener('click', () => load().catch(showError));
   await load();
 }
+
+// ------------------------------------------------------------------ Contas em aberto (sem nenhum pagamento)
+export async function openAccounts(host) {
+  const el = fresh(host);
+  const rows = (await api.get('/accounts', { financial_status: 'PENDENTE', limit: 500 })).filter((a) => a.total_cents > 0 && a.received_cents === 0);
+  const now = Date.now();
+  const total = rows.reduce((s, a) => s + a.total_cents, 0);
+  render(el, html`<div class="page-head"><div><h1>Contas em aberto (sem pagamento)</h1><div class="muted">Contas com valor lançado e nenhum recebimento confirmado</div></div></div>
+    <div class="grid k4 mb"><div class="card kpi"><div class="label">Contas em aberto</div><div class="value">${rows.length}</div></div>
+      <div class="card kpi"><div class="label">Valor em aberto</div><div class="value">${money(total)}</div></div>
+      <div class="card kpi"><div class="label">Com cobrança em andamento</div><div class="value">${rows.filter((a) => ['PENDENTE', 'PROCESSANDO', 'AGUARDANDO_CONFERENCIA'].includes(a.last_transaction_status)).length}</div><div class="sub">Pix/boleto/cartão aguardando</div></div></div>
+    <div class="card">${table([
+    { label: 'Conta', render: (a) => html`<a href="#/contas/${a.id}"><strong>${a.number}</strong></a>` },
+    { label: 'Atendimento', render: (a) => html`${a.appointment_number}<div class="small muted">${datetime(a.opened_at)} · ${Math.floor((now - new Date(a.opened_at).getTime()) / 86400000)} dia(s)</div>` },
+    { label: 'Paciente', key: 'patient_name' }, { label: 'Procedimentos', render: (a) => a.procedures || '—' }, { label: 'Modalidade', render: (a) => label(a.modality) },
+    { label: 'Valor', class: 'money', render: (a) => html`<strong>${money(a.total_cents)}</strong>` },
+    { label: 'Cobrança', render: (a) => (a.last_transaction_status ? html`${badge(a.last_transaction_status)} <span class="small muted">${label(a.last_method)}</span>` : html`<span class="muted small">nenhuma</span>`) },
+    { label: '', render: (a) => html`<div class="btn-group"><a class="btn sm primary" href="#/contas/${a.id}?etapa=quitacao">Receber</a>${can('payments.receive') ? html`<a class="btn sm" href="#/boletos?conta=${a.id}">Emitir boleto</a>` : ''}</div>` },
+  ], rows, { empty: 'Nenhuma conta em aberto sem pagamento.' })}</div>`);
+}
+
+// ------------------------------------------------------------------ Contas fechadas
+export async function closedAccounts(host, { params }) {
+  const el = fresh(host);
+  const tab = params.aba || 'quitadas';
+  const filters = { quitadas: { financial_status: 'QUITADA' }, fechadas: { billing_status: 'FECHADA' }, faturadas: { billing_status: 'FATURADA' } }[tab] || {};
+  const rows = await api.get('/accounts', { ...filters, limit: 500 });
+  render(el, html`<div class="page-head"><div><h1>Contas fechadas</h1><div class="muted">Contas quitadas e contas fechadas/faturadas para cobrança</div></div></div>
+    <div class="tabs">${[['quitadas', 'Quitadas'], ['fechadas', 'Fechadas para faturamento'], ['faturadas', 'Faturadas (convênio)']].map(([k, l]) => html`<button data-tab="${k}" class="${k === tab ? 'active' : ''}">${l}</button>`)}</div>
+    <div class="card">${table([
+    { label: 'Conta', render: (a) => html`<a href="#/contas/${a.id}"><strong>${a.number}</strong></a>` },
+    { label: 'Atendimento', render: (a) => html`${a.appointment_number}<div class="small muted">${datetime(a.opened_at)}</div>` },
+    { label: 'Paciente', key: 'patient_name' }, { label: 'Modalidade', render: (a) => label(a.modality) },
+    { label: 'Total', class: 'money', render: (a) => money(a.total_cents) }, { label: 'Recebido', class: 'money', render: (a) => money(a.received_cents) },
+    { label: 'Formas', render: (a) => (a.methods ? a.methods.split(', ').map(label).join(', ') : '—') },
+    { label: 'Quitada em', render: (a) => datetime(a.settled_at) }, { label: 'Financeiro', render: (a) => badge(a.financial_status) },
+    { label: 'Faturamento', render: (a) => badge(a.billing_status) }, { label: 'Fiscal', render: (a) => badge(a.fiscal_status) },
+  ], rows, { empty: 'Nenhuma conta nesta situação.' })}</div>`);
+  on(el, 'click', '[data-tab]', (e, b) => { location.hash = `#/contas-fechadas?aba=${b.dataset.tab}`; });
+}

@@ -31,6 +31,7 @@ async function setup() {
   registry.pix.DEMO_PIX.failureMode = false;
   registry.card.DEMO_CARD.failureMode = false;
   registry.fiscal.DEMO_FISCAL.failureMode = false;
+  registry.boleto.DEMO_BOLETO.failureMode = false;
   registry.fiscal.DEMO_FISCAL.nextOutcome = 'EMITIR';
   app = createApp();
   return app;

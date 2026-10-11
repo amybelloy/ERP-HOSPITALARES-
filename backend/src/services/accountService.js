@@ -104,6 +104,7 @@ async function setBillingStatus(accountId, status, ctx) {
   return withTransaction(async (c) => {
     const account = await lockAccount(c, accountId);
     if (status !== 'ABERTA' && !account.checked_at) throw unprocessable('A conta precisa ser conferida antes de ser fechada.');
+    if (account.billing_batch_id && status !== 'FATURADA') throw unprocessable('Conta vinculada a uma remessa de convênio: cancele a remessa antes de reabrir.');
     const { rows: [a] } = await c.query('UPDATE accounts SET billing_status = $2, updated_at = now() WHERE id = $1 RETURNING *', [accountId, status]);
     await audit(c, ctx, 'CONTA_FATURAMENTO', 'accounts', accountId, { de: account.billing_status, para: status });
     return a;

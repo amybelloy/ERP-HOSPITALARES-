@@ -102,6 +102,18 @@ async function seedDemoData({ log = console.log } = {}) {
   const { rows: [ecoTe] } = await pool.query(`SELECT id FROM procedures WHERE code = 'ECO-TE'`);
   const a4 = await appointments.open({ patient_id: pt.id, professional_id: doc.id, sector: 'Cardiologia', type: 'EXAME', modality: 'PARTICULAR', procedures: [{ procedure_id: ecoTe.id }] }, rec);
   await pool.query('UPDATE appointments SET opened_at = $2 WHERE id = $1', [a4.id, `${year}-10-01T09:30:00-03:00`]);
+  // Atendimento de convênio já conferido e fechado, pronto para remessa
+  const { rows: [maria] } = await pool.query(`SELECT id FROM patients WHERE name LIKE 'Maria%'`);
+  const { rows: [plan] } = await pool.query(`SELECT id FROM insurance_plans ORDER BY id LIMIT 1`);
+  const { rows: [ecg] } = await pool.query(`SELECT id FROM procedures WHERE code = 'ECG'`);
+  await pool.query(`UPDATE patients SET insurance_plan_id = $2, insurance_card_number = '0001234567890' WHERE id = $1`, [maria.id, plan.id]);
+  const conv = await appointments.open({ patient_id: maria.id, professional_id: doc.id, sector: 'Cardiologia', type: 'EXAME', modality: 'CONVENIO', insurance_plan_id: plan.id,
+    procedures: [{ procedure_id: ecg.id }, { procedure_id: eco.id }] }, rec);
+  const accountsSvc = require('../services/accountService');
+  const fat = await ctxOf('faturamento@demo.local');
+  await accountsSvc.check(conv.account_id, fat);
+  await accountsSvc.setBillingStatus(conv.account_id, 'FECHADA', fat);
+
   // ---------------- Assistencial: unidades, leitos, vínculo usuário-profissional e paciente internado
   await pool.query(`UPDATE users SET professional_id = (SELECT id FROM professionals WHERE council = 'CRM' ORDER BY id LIMIT 1) WHERE email = 'medico@demo.local'`);
   await pool.query(`UPDATE users SET professional_id = (SELECT id FROM professionals WHERE council = 'COREN' ORDER BY id LIMIT 1) WHERE email = 'enfermagem@demo.local'`);
