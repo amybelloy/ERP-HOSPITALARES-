@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Saúde Gestão — Gestão Hospitalar</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="icon" href="data:,">
+</head>
+<body>
+  <noscript>Este sistema requer JavaScript habilitado.</noscript>
+
+  <!-- Tela de login -->
+  <div id="login" class="login-wrap hidden">
+    <form class="login-card" id="login-form" autocomplete="on">
+      <div class="logo"><div class="logo-mark">S+</div><div class="logo-text">Saúde<span>Gestão</span></div></div>
+      <h2>Acesso ao sistema</h2>
+      <div class="stack">
+        <div><label for="email">E-mail</label><input id="email" name="email" type="email" required autocomplete="username"></div>
+        <div><label for="password">Senha</label><input id="password" name="password" type="password" required autocomplete="current-password"></div>
+        <div id="login-error" class="alert danger hidden"></div>
+        <button class="btn primary" type="submit" id="login-btn">Entrar</button>
+      </div>
+      <div class="demo-users" id="demo-users">
+        <strong>Ambiente de demonstração</strong> — usuários fictícios (senha <code>Demo@12345</code>):<br>
+        admin@ · recepcao@ · caixa@ · faturamento@ · financeiro@ · fiscal@ <em>demo.local</em>
+      </div>
+    </form>
+  </div>
+
+  <!-- Aplicação -->
+  <div id="app" class="shell hidden">
+    <aside class="sidebar">
+      <div class="brand"><div class="logo-mark">S+</div><div class="logo-text">Saúde<span>Gestão</span></div></div>
+      <nav id="menu"></nav>
+    </aside>
+    <header class="topbar">
+      <div class="search">
+        <span class="icon">⌕</span>
+        <input id="global-search" type="search" placeholder="Pesquisar paciente, CPF, prontuário, atendimento ou conta…" autocomplete="off">
+        <div id="search-results" class="search-results hidden"></div>
+      </div>
+      <div class="grow"></div>
+      <button class="bell" id="bell" title="Notificações">🔔<span class="count hidden" id="bell-count">0</span></button>
+      <div id="notif-panel" class="notif-panel hidden"></div>
+      <div class="user">
+        <div class="avatar" id="user-avatar">?</div>
+        <div><div id="user-name"></div><div class="small muted" id="user-role"></div></div>
+        <button class="btn sm" id="logout">Sair</button>
+      </div>
+    </header>
+    <main class="main" id="view"></main>
+  </div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

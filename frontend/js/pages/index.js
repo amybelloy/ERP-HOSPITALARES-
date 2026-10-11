@@ -1,0 +1,11 @@
+export { dashboard } from './dashboard.js';
+export { patients, patientDetail, records } from './patients.js';
+export { registry } from './registry.js';
+export { scheduling } from './scheduling.js';
+export { appointments, newAppointment } from './appointments.js';
+export { accounts, accountDetail } from './account.js';
+export { cashier, settlement, receivables, billing } from './finance.js';
+export { fiscal } from './fiscal.js';
+export { reconciliation } from './reconciliation.js';
+export { reports } from './reports.js';
+export { users, audit, settings } from './admin.js';
