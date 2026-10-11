@@ -23,7 +23,7 @@ export async function fiscal(host, { params }) {
       ${table([{ label: 'Conta', render: (a) => html`<a href="#/contas/${a.id}">${a.number}</a>` }, { label: 'Atendimento', key: 'appointment_number' }, { label: 'Tomador', render: (a) => html`${a.patient_name}${a.has_cpf ? '' : html` <span class="badge danger">sem CPF</span>`}` },
         { label: 'Serviço', render: (a) => a.procedures }, { label: 'Valor', class: 'money', render: (a) => money(a.total_cents) }, { label: 'Quitada em', render: (a) => datetime(a.settled_at) },
         { label: 'Status fiscal', render: (a) => badge(a.fiscal_status) },
-        { label: '', render: (a) => (manage ? html`<div class="btn-group"><button class="btn sm primary" data-prep="${a.id}" data-mode="INTEGRACAO">${isDemo ? 'Preparar (demo)' : 'Preparar p/ emissão'}</button><button class="btn sm" data-prep="${a.id}" data-mode="EXPORTACAO">Preparar p/ outro sistema</button></div>` : '') }],
+        { label: '', render: (a) => (manage ? html`<div class="btn-group"><a class="btn sm primary" href="#/contas/${a.id}?etapa=nota">Abrir nota (escolher tomador)</a><button class="btn sm" data-prep="${a.id}" data-mode="INTEGRACAO">Emitir em nome do paciente${isDemo ? ' (demo)' : ''}</button><button class="btn sm" data-prep="${a.id}" data-mode="EXPORTACAO">Preparar p/ outro sistema</button></div>` : '') }],
       rows, { empty: 'Nenhuma conta elegível.' })}</div>`);
   };
 
@@ -36,7 +36,7 @@ export async function fiscal(host, { params }) {
         { label: 'Número / verificação', render: (d) => (d.nfse_number ? html`${d.nfse_number}<div class="small muted">${d.verification_code || ''}</div>` : '—') },
         { label: 'Solicitado', render: (d) => datetime(d.requested_at) },
         { label: '', render: (d) => html`<div class="btn-group">
-          <button class="btn sm" data-view="${d.id}">Conferir dados</button>
+          <button class="btn sm" data-view="${d.id}">Conferir dados</button><a class="btn sm" href="#/contas/${d.account_id}?etapa=nota">Abrir na conta</a>
           ${manage && ['PREPARADA', 'FALHA_COMUNICACAO'].includes(d.status) ? html`<button class="btn sm primary" data-submit="${d.id}">${d.mode === 'EXPORTACAO' ? 'Gerar exportação' : d.status === 'FALHA_COMUNICACAO' ? 'Reenviar' : 'Enviar emissão'}</button>` : ''}
           ${['ENVIADA', 'PROCESSANDO'].includes(d.status) ? html`<button class="btn sm" data-check="${d.id}">Consultar resultado</button>` : ''}
           ${manage && ['EXPORTADA', 'EMITIDA_EXTERNAMENTE', 'PREPARADA'].includes(d.status) ? html`<a class="btn sm" href="/api/fiscal/documents/${d.id}/export?format=xml">XML DPS</a>` : ''}

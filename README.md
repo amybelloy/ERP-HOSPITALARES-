@@ -112,7 +112,13 @@ Senha de todos: `Demo@12345` (altere com `SEED_PASSWORD` antes do seed).
 4. Clique **Simular pagamento Pix pelo pagador**. O "banco simulado" envia um webhook **assinado**; o
    sistema valida, **reconsulta a cobrança** e só então confirma. A conta passa a **Quitada**, saldo
    R$ 0,00, com data/hora e origem da confirmação em *Consultar quitação*.
-5. Teste também: cartão via terminal (aprovar/negar), dinheiro (fica *aguardando conferência* até outro
+5. A conta é organizada em **3 etapas**, como no fluxo do SOUL MV:
+   **1 · Lançamento da conta** (cabeçalho do atendimento e itens lançados: grupo, procedimento, qtde, setor,
+   prestador, valor; "Fecha conta?"), **2 · Dados da conta / Quitação** (seleção entre as contas do paciente,
+   totais, pagamentos e histórico da quitação) e **3 · Nota fiscal** (dados de emissão, CNAE, natureza do
+   serviço, impostos — ISS, IR, IBS, CBS — e **em nome de quem sai a nota**: o paciente ou outra pessoa/empresa,
+   com CPF/CNPJ, endereço e e-mail editáveis antes da emissão).
+6. Teste também: cartão via terminal (aprovar/negar), dinheiro (fica *aguardando conferência* até outro
    usuário, ex. **caixa** ou **financeiro**, conferir), pagamento parcial, estorno (como **financeiro**),
    emissão fiscal (como **fiscal**, inclusive pendente/rejeitada na aba *Simulação*), conciliação
    (importar → conciliar) e falhas de comunicação (*Configurações* → simulação de falhas, como **admin**).

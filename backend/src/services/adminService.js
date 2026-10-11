@@ -109,12 +109,20 @@ async function updateSettings(key, body, ctx) {
       address: v.string('address', { max: 200 }),
       phone: v.string('phone', { max: 30 }),
       simplesNacional: v.bool('simplesNacional', { def: false }),
+      cnae: v.digits('cnae', { label: 'CNAE' }),
     };
     if (value.cnpj && !isValidCNPJ(value.cnpj)) v.fail('cnpj', 'CNPJ inválido.');
     v.done();
   } else if (key === 'fiscal') {
     const v = validator(body);
-    value = { defaultMode: v.oneOf('defaultMode', ['INTEGRACAO', 'EXPORTACAO'], { required: true }), requireSettled: v.bool('requireSettled', { def: true }) };
+    value = {
+      defaultMode: v.oneOf('defaultMode', ['INTEGRACAO', 'EXPORTACAO'], { required: true }),
+      requireSettled: v.bool('requireSettled', { def: true }),
+      // alíquotas em pontos-base (100 = 1%); IR retido aplica-se apenas a tomador PJ; IBS/CBS informativos
+      irRateBp: v.int('irRateBp', { min: 0, max: 10000 }) ?? 0,
+      ibsRateBp: v.int('ibsRateBp', { min: 0, max: 10000 }) ?? 0,
+      cbsRateBp: v.int('cbsRateBp', { min: 0, max: 10000 }) ?? 0,
+    };
     v.done();
   } else throw badRequest('Configuração inexistente.');
   return withTransaction(async (c) => {

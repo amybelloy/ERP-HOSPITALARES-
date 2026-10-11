@@ -130,6 +130,8 @@ r.get('/fiscal/documents/:id/export', can('fiscal.manage'), async (req, res) => 
   if (req.query.format === 'xml') { res.type('application/xml').attachment(`dps-${id(req)}.xml`).send(data.xml_dps_nao_assinado); return; }
   res.json(data);
 });
+r.get('/fiscal/accounts/:id/preview', can('fiscal.view'), async (req, res) => res.json(await fiscal.preview(id(req))));
+r.put('/fiscal/documents/:id', can('fiscal.manage'), async (req, res) => res.json(await fiscal.updateDraft(id(req), req.body, req.ctx)));
 r.post('/fiscal/accounts/:id/prepare', can('fiscal.manage'), async (req, res) => res.status(201).json(await fiscal.prepare(id(req), req.body, req.ctx)));
 r.post('/fiscal/documents/:id/submit', can('fiscal.manage'), async (req, res) => res.json(await fiscal.submit(id(req), req.ctx)));
 r.post('/fiscal/documents/:id/check', can('fiscal.manage', 'fiscal.view'), async (req, res) => res.json(await fiscal.check(id(req), req.ctx)));

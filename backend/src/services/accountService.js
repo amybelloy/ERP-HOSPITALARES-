@@ -115,6 +115,8 @@ async function get(accountId) {
     `SELECT ac.*, (ac.total_cents - ac.received_cents) AS balance_cents,
             ap.number AS appointment_number, ap.opened_at, ap.status AS appointment_status, ap.modality, ap.type, ap.sector,
             p.id AS patient_id, p.name AS patient_name, p.code AS patient_code, p.cpf AS patient_cpf, mr.record_number,
+            ap.notes AS appointment_notes, ap.professional_id, ap.insurance_plan_id, p.insurance_card_number,
+            (SELECT u2.name FROM users u2 WHERE u2.id = ap.opened_by) AS opened_by_name,
             pr.name AS professional_name, u.name AS checked_by_name, ip.name AS insurance_name
        FROM accounts ac JOIN appointments ap ON ap.id = ac.appointment_id JOIN patients p ON p.id = ac.patient_id
        JOIN medical_records mr ON mr.patient_id = p.id
@@ -123,8 +125,13 @@ async function get(accountId) {
       WHERE ac.id = $1`, [accountId]);
   if (!a) throw notFound('Conta não encontrada.');
   const { rows: items } = await pool.query(
-    `SELECT ai.*, pc.code AS procedure_code, u.name AS created_by_name FROM account_items ai
+    `SELECT ai.*, pc.code AS procedure_code, pc.category AS procedure_group, u.name AS created_by_name,
+            prof.name AS professional_name, ap.sector AS item_sector
+       FROM account_items ai
        LEFT JOIN procedures pc ON pc.id = ai.procedure_id LEFT JOIN users u ON u.id = ai.created_by
+       LEFT JOIN appointment_procedures apr ON apr.id = ai.appointment_procedure_id
+       LEFT JOIN professionals prof ON prof.id = apr.professional_id
+       LEFT JOIN accounts acx ON acx.id = ai.account_id LEFT JOIN appointments ap ON ap.id = acx.appointment_id
       WHERE ai.account_id = $1 ORDER BY ai.id`, [accountId]);
   const { rows: payments } = await pool.query(
     `SELECT py.id, py.method, py.method_label, py.amount_cents, py.refunded_cents, py.installments, py.status, py.provider, py.provider_charge_id,
@@ -152,6 +159,7 @@ async function search(f = {}) {
   const add = (sql, val) => { params.push(val); where.push(sql.replace('?', `$${params.length}`)); };
   if (f.from) add('ap.opened_at >= ?::date', f.from);
   if (f.to) add("ap.opened_at < (?::date + interval '1 day')", f.to);
+  if (f.patient_id) add('ac.patient_id = ?::bigint', f.patient_id);
   if (f.patient) add("(lower(p.name) LIKE '%' || lower(?) || '%')", f.patient);
   if (f.record_number) add('upper(mr.record_number) = upper(?)', f.record_number);
   if (f.appointment_number) add('upper(ap.number) = upper(?)', f.appointment_number);

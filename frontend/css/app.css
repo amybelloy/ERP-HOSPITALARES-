@@ -222,3 +222,43 @@ tr.cancelled td { color: var(--muted); text-decoration: line-through; }
 .search-pick { position: relative; }
 .qty { width: 80px; }
 .grid > .card + .card { margin-top: 0; }
+
+/* ----------------------------- Conta em etapas (estilo ficha) ----------------------------- */
+.stepper { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.stepper button { border: 0; background: none; padding: 12px 14px; text-align: left; cursor: pointer; font-family: inherit; border-right: 1px solid var(--border); display: flex; gap: 10px; align-items: center; color: var(--muted); }
+.stepper button:last-child { border-right: 0; }
+.stepper button .n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--border); font-weight: 700; flex: none; }
+.stepper button .t { font-weight: 600; color: var(--text); font-size: 13.5px; }
+.stepper button .s { font-size: 12px; }
+.stepper button.active { background: var(--brand-light); box-shadow: inset 0 -3px 0 var(--brand); }
+.stepper button.active .n { background: var(--brand); color: #fff; border-color: var(--brand); }
+.stepper button.done .n { background: var(--ok); color: #fff; border-color: var(--ok); }
+.ficha { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px 10px; }
+.ficha > div { grid-column: span 2; min-width: 0; }
+.ficha .c1 { grid-column: span 1; } .ficha .c3 { grid-column: span 3; } .ficha .c4 { grid-column: span 4; }
+.ficha .c5 { grid-column: span 5; } .ficha .c6 { grid-column: span 6; } .ficha .c8 { grid-column: span 8; } .ficha .c12 { grid-column: 1 / -1; }
+.ficha label { font-size: 11px; margin-bottom: 2px; font-weight: 600; }
+.ficha input, .ficha select, .ficha textarea { padding: 5px 8px; font-size: 13px; }
+.ficha input[readonly], .ficha .ro { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.ficha .ro { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; min-height: 29px; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ficha .ro.strong { font-weight: 700; }
+.section-title { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--brand-dark); font-weight: 700; margin: 4px 0 10px; }
+.grid-items td, .grid-items th { padding: 6px 8px; font-size: 13px; }
+.grid-items tbody tr { cursor: pointer; }
+.grid-items tbody tr.selected { background: var(--brand-light); }
+.toolbar { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); margin-top: 12px; }
+.taxbar { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.taxbar .ro { text-align: right; font-variant-numeric: tabular-nums; }
+.taker-choice { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; }
+.taker-choice label { display: flex; gap: 6px; align-items: center; margin: 0; font-size: 13.5px; color: var(--text); cursor: pointer; }
+.side-actions { display: flex; flex-direction: column; gap: 6px; }
+.nf-layout { display: grid; grid-template-columns: 1fr 220px; gap: 16px; }
+tr.current td { background: var(--brand-light); font-weight: 600; }
+@media (max-width: 900px) {
+  .stepper { grid-template-columns: 1fr; }
+  .ficha > div, .ficha .c1, .ficha .c3, .ficha .c4, .ficha .c5, .ficha .c6, .ficha .c8 { grid-column: 1 / -1; }
+  .nf-layout { grid-template-columns: 1fr; }
+}
+input[type=radio] { width: auto; }
+.taxbar.ficha { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
+.taxbar.ficha > div { grid-column: auto; }

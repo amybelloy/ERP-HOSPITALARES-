@@ -166,3 +166,36 @@ test('Comprovante interno é diferenciado de documento fiscal', async () => {
   assert.equal(rc.amount_cents, 50000);
   assert.ok(rc.transaction_id);
 });
+
+test('Nota fiscal: prévia sugere o paciente como tomador e permite emitir em nome de outra pessoa/empresa', async () => {
+  const { accountId } = await settledAccount();
+  const pv = (await fiscal.get(`/api/fiscal/accounts/${accountId}/preview`)).body;
+  assert.equal(pv.taker.personType, 'F');
+  assert.match(pv.taker.name, /Paciente Teste/);
+  assert.equal(pv.taxes.baseCents, 50000);
+  assert.equal(pv.taxes.issCents, 1000, 'ISS 2% de R$ 500,00');
+  assert.equal(pv.eligible, true);
+
+  const bad = await fiscal.post(`/api/fiscal/accounts/${accountId}/prepare`).send({ taker: { personType: 'J', name: 'Empresa X', document: '11111111111111' } });
+  assert.equal(bad.status, 400);
+  const cnpj = '11222333000181';
+  const doc = await fiscal.post(`/api/fiscal/accounts/${accountId}/prepare`).send({
+    taker: { personType: 'J', name: 'Empresa Responsável Ltda', document: cnpj, email: 'fin@empresa.exemplo', city: 'Niterói', state: 'rj' },
+    observations: 'Pagamento pela empresa do paciente',
+  });
+  assert.equal(doc.status, 201);
+  assert.equal(doc.body.taker.cnpj, cnpj);
+  assert.equal(doc.body.taker.state, 'RJ');
+  assert.equal(doc.body.taker_is_patient, false);
+  // Edição do tomador enquanto PREPARADA
+  const upd = await fiscal.put(`/api/fiscal/documents/${doc.body.id}`).send({ taker: { personType: 'F', name: 'Responsável Financeiro', document: h.newCPF() }, observations: 'Responsável legal' });
+  assert.equal(upd.status, 200);
+  assert.equal(upd.body.taker.name, 'Responsável Financeiro');
+  const exp = (await fiscal.get(`/api/fiscal/documents/${doc.body.id}/export`)).body;
+  assert.match(exp.xml_dps_nao_assinado, /<xNome>Responsável Financeiro<\/xNome>/);
+  assert.match(exp.xml_dps_nao_assinado, /<xInfComp>Responsável legal<\/xInfComp>/);
+  const sent = (await fiscal.post(`/api/fiscal/documents/${doc.body.id}/submit`).send({})).body;
+  assert.equal(sent.status, 'EMITIDA');
+  assert.equal((await fiscal.put(`/api/fiscal/documents/${doc.body.id}`).send({ observations: 'x' })).status, 422, 'não altera após envio');
+  assert.equal((await rec.put(`/api/fiscal/documents/${doc.body.id}`).send({})).status, 403);
+});

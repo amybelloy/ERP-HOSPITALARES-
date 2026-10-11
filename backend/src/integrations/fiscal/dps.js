@@ -24,8 +24,8 @@ function buildDpsXml(doc, { environment = '2', now = new Date() } = {}) {
 ${tag('tpAmb', environment)}${tag('dhEmi', now.toISOString().replace(/\.\d{3}Z$/, '-00:00'))}${tag('verAplic', 'SaudeGestao-1.0')}
 ${tag('serie', doc.dps_series)}${tag('nDPS', doc.dps_number)}${tag('dCompet', competence)}${tag('tpEmit', '1')}${tag('cLocEmi', p.cityIbgeCode)}
 <prest>${tag('CNPJ', p.cnpj)}${tag('IM', p.municipalRegistration)}<regTrib>${tag('opSimpNac', p.simplesNacional ? '3' : '1')}${tag('regEspTrib', '0')}</regTrib></prest>
-<toma>${t.cpf ? tag('CPF', t.cpf) : tag('CNPJ', t.cnpj)}${tag('xNome', t.name)}${t.cityIbgeCode ? `<end><endNac>${tag('cMun', t.cityIbgeCode)}${tag('CEP', t.zipCode)}</endNac>${tag('xLgr', t.address)}${tag('nro', t.addressNumber || 'S/N')}${tag('xBairro', t.district)}</end>` : ''}${tag('email', t.email)}</toma>
-<serv><locPrest>${tag('cLocPrestacao', p.cityIbgeCode)}</locPrest><cServ>${tag('cTribNac', s.nationalTaxCode)}${tag('xDescServ', s.description)}${tag('cNBS', s.nbsCode)}</cServ></serv>
+<toma>${t.cpf ? tag('CPF', t.cpf) : tag('CNPJ', t.cnpj)}${tag('IM', t.municipalRegistration)}${tag('xNome', t.name)}${t.cityIbgeCode ? `<end><endNac>${tag('cMun', t.cityIbgeCode)}${tag('CEP', t.zipCode)}</endNac>${tag('xLgr', t.address)}${tag('nro', t.addressNumber || 'S/N')}${tag('xBairro', t.district)}</end>` : ''}${tag('email', t.email)}</toma>
+<serv><locPrest>${tag('cLocPrestacao', p.cityIbgeCode)}</locPrest><cServ>${tag('cTribNac', s.nationalTaxCode)}${tag('xDescServ', s.description)}${tag('cNBS', s.nbsCode)}</cServ>${doc.observations ? `<infoCompl>${tag('xInfComp', doc.observations)}</infoCompl>` : ''}</serv>
 <valores><vServPrest>${tag('vServ', centsToDecimal(doc.amount_cents))}</vServPrest><trib><tribMun>${tag('tribISSQN', '1')}${tag('tpRetISSQN', '1')}${s.issRateBp != null ? tag('pAliq', (s.issRateBp / 100).toFixed(2)) : ''}</tribMun><totTrib>${tag('indTotTrib', '0')}</totTrib></trib></valores>
 </infDPS>
 </DPS>`;

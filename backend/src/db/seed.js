@@ -42,8 +42,8 @@ async function seedBase({ log = console.log } = {}) {
   }
   await pool.query(`INSERT INTO settings (key, value) VALUES ('institution', $1), ('fiscal', $2) ON CONFLICT (key) DO NOTHING`, [
     { name: 'Hospital Demonstração (fictício)', cnpj: cnpjWithDigits('112223330001'), municipalRegistration: '0000000', cityIbgeCode: '3550308',
-      city: 'São Paulo', state: 'SP', address: 'Rua Fictícia, 100', phone: '(11) 0000-0000', simplesNacional: false },
-    { defaultMode: 'INTEGRACAO', requireSettled: true },
+      city: 'São Paulo', state: 'SP', address: 'Rua Fictícia, 100', phone: '(11) 0000-0000', simplesNacional: false, cnae: '8610101' },
+    { defaultMode: 'INTEGRACAO', requireSettled: true, irRateBp: 0, ibsRateBp: 0, cbsRateBp: 0 },
   ]);
   log(`Usuários de demonstração criados (senha: ${process.env.SEED_PASSWORD ? '[definida em SEED_PASSWORD]' : password}).`);
   return true;

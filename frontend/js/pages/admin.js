@@ -83,13 +83,17 @@ export async function settings(host) {
         <div><label>Inscrição municipal</label><input name="municipalRegistration" value="${inst.municipalRegistration || ''}"></div><div><label>Código IBGE do município</label><input name="cityIbgeCode" value="${inst.cityIbgeCode || ''}"></div>
         <div><label>Cidade</label><input name="city" value="${inst.city || ''}"></div><div><label>UF</label><input name="state" value="${inst.state || ''}"></div>
         <div class="span2"><label>Endereço</label><input name="address" value="${inst.address || ''}"></div><div><label>Telefone</label><input name="phone" value="${inst.phone || ''}"></div>
+        <div><label>CNAE</label><input name="cnae" value="${inst.cnae || ''}"></div>
         <div><label>Simples Nacional</label><select name="simplesNacional"><option value="false">Não</option><option value="true" ${inst.simplesNacional ? 'selected' : ''}>Sim</option></select></div>
         <div class="full row end"><button class="btn primary" type="submit">Salvar</button></div></form></div>
       <div class="card"><h2>Política fiscal</h2><form class="form-grid" data-fiscal>
         <div class="span2"><label>Modo padrão de emissão</label><select name="defaultMode"><option value="INTEGRACAO">Emitir automaticamente por integração</option><option value="EXPORTACAO" ${fis.defaultMode === 'EXPORTACAO' ? 'selected' : ''}>Apenas preparar dados para outro sistema</option></select></div>
         <div class="span2"><label>Exigir conta quitada para emissão</label><select name="requireSettled"><option value="true">Sim</option><option value="false" ${fis.requireSettled === false ? 'selected' : ''}>Não</option></select></div>
+        <div><label>IR retido (PJ) — pontos-base</label><input name="irRateBp" type="number" value="${fis.irRateBp ?? 0}"></div>
+        <div><label>IBS — pontos-base</label><input name="ibsRateBp" type="number" value="${fis.ibsRateBp ?? 0}"></div>
+        <div><label>CBS — pontos-base</label><input name="cbsRateBp" type="number" value="${fis.cbsRateBp ?? 0}"></div>
         <div class="full row end"><button class="btn primary" type="submit">Salvar</button></div></form>
-        <p class="small muted">Ambas as opções ficam disponíveis por conta na tela fiscal.</p></div>
+        <p class="small muted">100 pontos-base = 1%. IR retido só se aplica quando o tomador é pessoa jurídica; IBS/CBS são informativos conforme a regra de transição configurada. Ambas as opções ficam disponíveis por conta na tela fiscal.</p></div>
     </div>
     <div class="card"><h2>Integrações</h2>
       ${integ.demoMode ? html`<div class="alert demo mb">DEMO_MODE ativo: provedores simulados disponíveis. Em produção use DEMO_MODE=false.</div>` : ''}
@@ -108,7 +112,7 @@ export async function settings(host) {
         { label: 'Status', render: (e) => html`${badge(e.status)}${e.error ? html`<div class="small muted">${e.error}</div>` : ''}` }, { label: 'Tentativas', key: 'attempts' }], events, { empty: 'Nenhuma notificação recebida.' })}</div>`);
   const formObj = (f) => Object.fromEntries(new FormData(f).entries());
   $('[data-inst]', el).addEventListener('submit', (e) => { e.preventDefault(); busy(e.submitter, async () => { const v = formObj(e.target); await api.put('/settings/institution', { ...v, simplesNacional: v.simplesNacional === 'true' }); toast('Dados da instituição salvos.', 'ok'); }); });
-  $('[data-fiscal]', el).addEventListener('submit', (e) => { e.preventDefault(); busy(e.submitter, async () => { const v = formObj(e.target); await api.put('/settings/fiscal', { defaultMode: v.defaultMode, requireSettled: v.requireSettled === 'true' }); toast('Política fiscal salva.', 'ok'); }); });
+  $('[data-fiscal]', el).addEventListener('submit', (e) => { e.preventDefault(); busy(e.submitter, async () => { const v = formObj(e.target); await api.put('/settings/fiscal', { defaultMode: v.defaultMode, requireSettled: v.requireSettled === 'true', irRateBp: v.irRateBp, ibsRateBp: v.ibsRateBp, cbsRateBp: v.cbsRateBp }); toast('Política fiscal salva.', 'ok'); }); });
   on(el, 'click', '[data-fail]', (e, b) => busy(b, async () => { await api.post('/demo/failure', { target: b.dataset.fail, enabled: b.dataset.on === 'true' }); await settings(host); }));
   on(el, 'click', '[data-retry]', (e, b) => busy(b, async () => { const r = await api.post('/webhook-events/retry'); toast(`${r.length} evento(s) reprocessado(s).`, 'ok'); await settings(host); }));
 }
