@@ -50,6 +50,9 @@ r.get('/dashboard', async (req, res) => res.json(await admin.dashboard()));
 r.get('/search', async (req, res) => res.json(await admin.globalSearch(req.query.q, req.ctx.user)));
 r.get('/notifications', async (req, res) => res.json(await admin.notifications(req.ctx.user)));
 
+// ---------------- Assistencial (PEP, leitos, triagem, prescrição, enfermagem) ----------------
+r.use(require('./clinical'));
+
 // ---------------- Pacientes / prontuário ----------------
 r.get('/patients', can('patients.view'), async (req, res) => res.json((await patients.search(req.query)).map((p) => patients.present(p, req.ctx.user))));
 r.post('/patients', can('patients.create'), async (req, res) => res.status(201).json(await patients.create(req.body, req.ctx)));

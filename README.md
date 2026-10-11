@@ -1,4 +1,4 @@
-# Saúde Gestão — ERP hospitalar (atendimento, conta, recebimento, quitação automática e NFS-e)
+# Saúde Gestão — plataforma de gestão em saúde (assistencial, administrativo e financeiro)
 
 Aplicação web de gestão hospitalar com módulos administrativos integrados. A identidade visual e o
 código são próprios (inspirados nos *fluxos* de sistemas como o SOUL MV, sem copiar telas ou código).
@@ -23,6 +23,32 @@ Paciente (prontuário único) ──► Atendimento (n por paciente) ──► C
 > movimentado e nenhuma nota oficial é emitida. As integrações reais (Santander, Getnet, NFS-e Nacional)
 > estão implementadas como adaptadores e são ativadas por variáveis de ambiente — veja
 > [docs/INTEGRACOES.md](docs/INTEGRACOES.md).
+
+## Módulos
+
+| Área | Módulos |
+|---|---|
+| **Assistencial** | Mapa de leitos (internação, transferência, alta, higienização) · Classificação de risco por cores (fila por prioridade e tempo-alvo) · **PEP** — prontuário eletrônico com barra do paciente e árvore de itens (resumo/linha do tempo, evoluções com assinatura e adendo, prescrição, alergias, sinais vitais com NEWS2, checagem, SAE, escalas, balanço hídrico, passagem de plantão, movimentações) |
+| **Enfermagem** | Painel da unidade (NEWS, medicações atrasadas, riscos Braden/Morse, pendência de SAE) · Checagem beira-leito com leitura da pulseira · Aprazamento automático · Itens "se necessário" · SAE · Escalas Braden, Morse e Glasgow · Balanço hídrico · Passagem de plantão SBAR |
+| **Atendimento** | Cadastro de pacientes, prontuário único, agenda, abertura de atendimento |
+| **Financeiro** | Conta do atendimento em 3 etapas, recebimento Pix/cartão/dinheiro, quitação automática, contas a receber, faturamento, conciliação, relatórios |
+| **Fiscal** | NFS-e por integração ou exportação, tomador editável |
+| **Administração** | Usuários e perfis (recepção, caixa, faturamento, financeiro, fiscal, médico, enfermagem, técnico de enfermagem, administração), auditoria, configurações |
+
+A organização dos módulos assistenciais segue a divisão funcional consagrada em sistemas hospitalares de
+mercado (como Soul MV e Philips Tasy): PEP com barra de identificação do paciente, ADEP/checagem,
+SAE, mapa de leitos e classificação de risco. Telas, código e identidade visual são próprios.
+
+### Regras assistenciais implementadas
+
+- Prescrição apenas por perfil médico; **alerta de alergia** bloqueia o item até justificativa (auditada).
+- Aprazamento automático pela frequência e validade da prescrição; suspensão cancela horários pendentes.
+- Checagem exige **leitura da pulseira** (prontuário ou código), não permite checar duas vezes, bloqueia
+  antecipação > 60 min e exige justificativa para atraso > 60 min ou não administração.
+- Evolução de enfermagem e SAE são privativas do enfermeiro; o técnico registra anotações (perfis separados).
+- Registros clínicos (evoluções, sinais vitais, escalas) são **imutáveis** no banco; correção por adendo.
+- Acesso ao PEP é registrado na auditoria (LGPD).
+- NEWS2, Braden, Morse e Glasgow calculados no servidor, com testes. São apoio à decisão e não substituem avaliação clínica.
 
 ## Tecnologias
 
@@ -100,6 +126,9 @@ Senha de todos: `Demo@12345` (altere com `SEED_PASSWORD` antes do seed).
 | `faturamento@demo.local` | Faturamento | ajustes de preço/desconto, cancelar itens, fechar contas |
 | `financeiro@demo.local` | Financeiro | conferir, estornar, reatribuir pagamentos, conciliação, relatórios/CSV, auditoria |
 | `fiscal@demo.local` | Fiscal | preparar/emitir/cancelar NFS-e |
+| `medico@demo.local` | Médico(a) | PEP, anamnese/evolução, prescrição, alta |
+| `enfermagem@demo.local` | Enfermagem | classificação de risco, leitos, sinais vitais, checagem, SAE, escalas, plantão |
+| `tecnico@demo.local` | Técnico(a) de enfermagem | sinais vitais, checagem, anotação, balanço hídrico |
 | `admin@demo.local` | Administração | tudo, inclusive usuários, permissões e integrações |
 
 ### Roteiro de demonstração (paciente particular, ecocardiograma de R$ 500,00)

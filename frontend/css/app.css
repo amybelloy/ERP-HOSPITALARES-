@@ -262,3 +262,66 @@ tr.current td { background: var(--brand-light); font-weight: 600; }
 input[type=radio] { width: auto; }
 .taxbar.ficha { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
 .taxbar.ficha > div { grid-column: auto; }
+
+/* =====================================================================
+   ASSISTENCIAL — barra do paciente, PEP, leitos, triagem, enfermagem
+   ===================================================================== */
+:root { --red: #c62828; --orange: #ef6c00; --yellow: #f9a825; --green: #2e7d32; --blue: #1565c0; }
+.patient-bar { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: center; background: #12313a; color: #e6f2f4; border-radius: var(--radius); padding: 10px 16px; margin-bottom: 14px; }
+.patient-bar .pname { font-size: 17px; font-weight: 700; color: #fff; }
+.patient-bar .pb { font-size: 12.5px; }
+.patient-bar .pb b { color: #9fd9df; font-weight: 600; margin-right: 4px; }
+.patient-bar .allergy { background: var(--red); color: #fff; border-radius: 4px; padding: 2px 8px; font-weight: 700; font-size: 12px; }
+.patient-bar .noallergy { background: rgba(255,255,255,.12); border-radius: 4px; padding: 2px 8px; font-size: 12px; }
+.tri { display: inline-block; min-width: 18px; height: 18px; border-radius: 4px; vertical-align: middle; }
+.tri.VERMELHO { background: var(--red); } .tri.LARANJA { background: var(--orange); } .tri.AMARELO { background: var(--yellow); }
+.tri.VERDE { background: var(--green); } .tri.AZUL { background: var(--blue); }
+.tri-label { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.news { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11.5px; font-weight: 700; }
+.news.BAIXO { background: var(--ok-bg); color: var(--ok); } .news.BAIXO_MEDIO { background: var(--warn-bg); color: var(--warn); }
+.news.MEDIO { background: #ffe0b2; color: #b34700; } .news.ALTO { background: var(--danger-bg); color: var(--danger); }
+.pep { display: grid; grid-template-columns: 210px 1fr; gap: 16px; align-items: start; }
+.pep-tree { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 0; position: sticky; top: 0; }
+.pep-tree .grp { font-size: 11px; text-transform: uppercase; color: var(--muted); padding: 10px 14px 4px; letter-spacing: .06em; }
+.pep-tree button { display: flex; width: 100%; justify-content: space-between; text-align: left; padding: 7px 14px; border: 0; background: none; cursor: pointer; font-family: inherit; font-size: 13.5px; color: var(--text); border-left: 3px solid transparent; }
+.pep-tree button:hover { background: var(--surface-2); }
+.pep-tree button.active { background: var(--brand-light); border-left-color: var(--brand); font-weight: 600; }
+.pep-tree .cnt { font-size: 11px; background: var(--danger); color: #fff; border-radius: 8px; padding: 0 6px; }
+.bed-units { display: grid; gap: 16px; }
+.bed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.bed { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; cursor: pointer; background: var(--surface); border-top: 5px solid #9aa9b1; min-height: 104px; display: flex; flex-direction: column; gap: 4px; }
+.bed:hover { box-shadow: var(--shadow); }
+.bed .code { font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; }
+.bed .st { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.bed .pt { font-size: 13px; font-weight: 600; }
+.bed.LIVRE { border-top-color: var(--green); } .bed.OCUPADO { border-top-color: var(--blue); background: #f5f9ff; }
+.bed.HIGIENIZACAO { border-top-color: var(--yellow); background: #fffbef; } .bed.MANUTENCAO, .bed.BLOQUEADO { border-top-color: var(--red); background: #fff6f6; }
+.bed.RESERVADO { border-top-color: #7b2cbf; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; background: var(--c); }
+.triage-colors { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.triage-colors label { border: 2px solid transparent; border-radius: var(--radius); padding: 10px; color: #fff; cursor: pointer; margin: 0; text-align: center; font-size: 13px; }
+.triage-colors label small { display: block; font-weight: 400; opacity: .9; }
+.triage-colors input { display: none; }
+.triage-colors label:has(input:checked) { border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,.15); }
+.tc-VERMELHO { background: var(--red); } .tc-LARANJA { background: var(--orange); } .tc-AMARELO { background: var(--yellow); color: #3a2a00 !important; }
+.tc-VERDE { background: var(--green); } .tc-AZUL { background: var(--blue); }
+tr.row-VERMELHO td:first-child { box-shadow: inset 5px 0 var(--red); } tr.row-LARANJA td:first-child { box-shadow: inset 5px 0 var(--orange); }
+tr.row-AMARELO td:first-child { box-shadow: inset 5px 0 var(--yellow); } tr.row-VERDE td:first-child { box-shadow: inset 5px 0 var(--green); }
+tr.row-AZUL td:first-child { box-shadow: inset 5px 0 var(--blue); }
+tr.overdue td { background: #fff1f0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips label { display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 16px; padding: 4px 10px; font-size: 12.5px; margin: 0; color: var(--text); font-weight: 400; cursor: pointer; }
+.chips input { width: auto; }
+.note { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 10px; background: var(--surface); }
+.note .meta { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.note .txt { white-space: pre-wrap; }
+.note.addendum { margin-left: 24px; border-left: 3px solid var(--warn); }
+.rx-item { display: grid; grid-template-columns: 130px 1fr 90px 80px 80px 60px 1fr 32px; gap: 6px; align-items: end; margin-bottom: 6px; }
+.rx-item label { font-size: 11px; }
+.big-number { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 900px) {
+  .pep { grid-template-columns: 1fr; } .pep-tree { position: static; }
+  .triage-colors { grid-template-columns: 1fr 1fr; } .rx-item { grid-template-columns: 1fr 1fr; }
+}
+.lg-l { --c: var(--green); } .lg-o { --c: var(--blue); } .lg-h { --c: var(--yellow); } .lg-r { --c: #7b2cbf; } .lg-m { --c: var(--red); }

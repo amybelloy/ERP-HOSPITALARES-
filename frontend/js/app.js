@@ -17,6 +17,11 @@ const MENU = [
   { n: 8, path: '/agendamento', label: 'Agendamento', perm: ['scheduling.view'], page: pages.scheduling },
   { n: 9, path: '/atendimentos', label: 'Atendimento', perm: ['appointments.view'], page: pages.appointments },
   { n: 10, path: '/contas', label: 'Conta do atendimento', perm: ['accounts.view'], page: pages.accounts },
+  { group: 'Assistencial' },
+  { n: 21, path: '/leitos', label: 'Mapa de leitos', perm: ['beds.view'], page: pages.beds },
+  { n: 22, path: '/triagem', label: 'Classificação de risco', perm: ['triage.perform', 'clinical.view'], page: pages.triage },
+  { n: 23, path: '/pep', label: 'Prontuário eletrônico (PEP)', perm: ['clinical.view'], page: pages.pep },
+  { n: 24, path: '/enfermagem', label: 'Área de enfermagem', perm: ['nursing.vitals', 'nursing.administer', 'nursing.sae'], page: pages.nursing },
   { group: 'Financeiro' },
   { n: 11, path: '/caixa', label: 'Recebimento e caixa', perm: ['payments.view'], page: pages.cashier },
   { n: 12, path: '/quitacao', label: 'Quitação de contas', perm: ['settlement.view'], page: pages.settlement },
@@ -36,6 +41,7 @@ const DETAIL = [
   { re: /^\/pacientes\/(\d+)$/, page: pages.patientDetail, perm: ['patients.view'], menu: '/pacientes' },
   { re: /^\/atendimentos\/novo$/, page: pages.newAppointment, perm: ['appointments.open'], menu: '/atendimentos' },
   { re: /^\/contas\/(\d+)$/, page: pages.accountDetail, perm: ['accounts.view'], menu: '/contas' },
+  { re: /^\/pep\/(\d+)$/, page: pages.pep, perm: ['clinical.view'], menu: '/pep' },
 ];
 
 const view = () => $('#view');

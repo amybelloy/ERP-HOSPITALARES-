@@ -36,6 +36,9 @@ async function seedBase({ log = console.log } = {}) {
     ['Faturamento Demo', 'faturamento@demo.local', 'faturamento'],
     ['Financeiro Demo', 'financeiro@demo.local', 'financeiro'],
     ['Fiscal Demo', 'fiscal@demo.local', 'fiscal'],
+    ['Dra. Ana Exemplo', 'medico@demo.local', 'medico'],
+    ['Enf. Carla Modelo', 'enfermagem@demo.local', 'enfermagem'],
+    ['Téc. Diego Fictício', 'tecnico@demo.local', 'tecnico_enfermagem'],
   ];
   for (const [name, email, role] of users) {
     await pool.query('INSERT INTO users (name, email, password_hash, role_id) SELECT $1,$2,$3,id FROM roles WHERE code = $4', [name, email, hash, role]);
@@ -99,6 +102,35 @@ async function seedDemoData({ log = console.log } = {}) {
   const { rows: [ecoTe] } = await pool.query(`SELECT id FROM procedures WHERE code = 'ECO-TE'`);
   const a4 = await appointments.open({ patient_id: pt.id, professional_id: doc.id, sector: 'Cardiologia', type: 'EXAME', modality: 'PARTICULAR', procedures: [{ procedure_id: ecoTe.id }] }, rec);
   await pool.query('UPDATE appointments SET opened_at = $2 WHERE id = $1', [a4.id, `${year}-10-01T09:30:00-03:00`]);
+  // ---------------- Assistencial: unidades, leitos, vínculo usuário-profissional e paciente internado
+  await pool.query(`UPDATE users SET professional_id = (SELECT id FROM professionals WHERE council = 'CRM' ORDER BY id LIMIT 1) WHERE email = 'medico@demo.local'`);
+  await pool.query(`UPDATE users SET professional_id = (SELECT id FROM professionals WHERE council = 'COREN' ORDER BY id LIMIT 1) WHERE email = 'enfermagem@demo.local'`);
+  await pool.query(`INSERT INTO care_units (code, name, kind) VALUES ('CLM', 'Clínica Médica — 3º andar', 'ENFERMARIA'), ('UTI', 'UTI Adulto', 'UTI'), ('PS-OBS', 'Pronto-socorro — Observação', 'OBSERVACAO')`);
+  const bedsByUnit = { CLM: ['301-A', '301-B', '302-A', '302-B', '303-A', '303-B', '304', '305'], UTI: ['UTI-01', 'UTI-02', 'UTI-03', 'UTI-04', 'UTI-05', 'UTI-06'], 'PS-OBS': ['OBS-1', 'OBS-2', 'OBS-3', 'OBS-4'] };
+  for (const [unit, codes] of Object.entries(bedsByUnit)) {
+    for (const code of codes) await pool.query(`INSERT INTO beds (unit_id, code) SELECT id, $2 FROM care_units WHERE code = $1`, [unit, code]);
+  }
+  await pool.query(`UPDATE beds SET status = 'HIGIENIZACAO' WHERE code = '303-B'`);
+  await pool.query(`UPDATE beds SET status = 'MANUTENCAO', notes = 'Troca de régua de gases' WHERE code = 'UTI-06'`);
+  await pool.query(`INSERT INTO patient_allergies (patient_id, substance, reaction, severity) VALUES ($1, 'Dipirona', 'Urticária e edema', 'GRAVE')`, [pt.id]);
+
+  const clinicalSvc = require('../services/clinicalService');
+  const rxSvc = require('../services/prescriptionService');
+  const med = await ctxOf('medico@demo.local');
+  const nurse = await ctxOf('enfermagem@demo.local');
+  const { rows: [jose] } = await pool.query(`SELECT id FROM patients WHERE name LIKE 'José%'`);
+  await pool.query(`INSERT INTO patient_allergies (patient_id, substance, reaction, severity) VALUES ($1, 'Dipirona', 'Broncoespasmo', 'GRAVE'), ($1, 'Látex', 'Dermatite de contato', 'LEVE')`, [jose.id]);
+  const intern = await appointments.open({ patient_id: jose.id, professional_id: doc.id, sector: 'Clínica Médica', type: 'INTERNACAO', modality: 'PARTICULAR' }, rec);
+  const { rows: [bed] } = await pool.query(`SELECT id FROM beds WHERE code = '301-A'`);
+  await clinicalSvc.admit({ appointment_id: intern.id, bed_id: bed.id, reason: 'Pneumonia comunitária — internação clínica' }, nurse);
+  await clinicalSvc.addNote(intern.id, { kind: 'ANAMNESE', cid_code: 'J18.9', text: 'Paciente fictício, 60 anos, com tosse produtiva e febre há 3 dias. Dados de demonstração.' }, med);
+  await clinicalSvc.addVitals(intern.id, { systolic: 118, diastolic: 76, heart_rate: 98, resp_rate: 22, temperature: '38,2', spo2: 94, consciousness: 'A' }, nurse);
+  await rxSvc.create(intern.id, { valid_hours: 24, notes: 'Prescrição de demonstração', items: [
+    { kind: 'MEDICAMENTO', description: 'Ceftriaxona 1 g', dose: '1 g', route: 'EV', frequency_hours: 12 },
+    { kind: 'MEDICAMENTO', description: 'Paracetamol 750 mg', dose: '750 mg', route: 'VO', frequency_hours: 6, if_needed: true, instructions: 'Se febre ≥ 37,8 °C' },
+    { kind: 'CUIDADO', description: 'Aferir sinais vitais', frequency_hours: 4 },
+    { kind: 'DIETA', description: 'Dieta branda' },
+  ] }, med);
   log('Dados fictícios de demonstração criados.');
 }
 

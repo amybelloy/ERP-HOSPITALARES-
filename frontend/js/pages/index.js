@@ -9,3 +9,7 @@ export { fiscal } from './fiscal.js';
 export { reconciliation } from './reconciliation.js';
 export { reports } from './reports.js';
 export { users, audit, settings } from './admin.js';
+export { beds } from './beds.js';
+export { triage } from './triage.js';
+export { pep } from './pep.js';
+export { nursing } from './nursing.js';

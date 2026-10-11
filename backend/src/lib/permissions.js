@@ -37,6 +37,21 @@ const PERMISSIONS = {
   'audit.view': 'Consultar auditoria',
   'settings.manage': 'Configurações e integrações',
   'demo.simulate': 'Usar simulações do modo de demonstração',
+  // ---- Assistencial
+  'clinical.view': 'Consultar prontuário eletrônico (PEP)',
+  'clinical.allergies': 'Registrar alergias',
+  'clinical.notes_medical': 'Registrar anamnese/evolução médica e sumário de alta',
+  'prescription.write': 'Prescrever (prescrição médica)',
+  'beds.view': 'Consultar mapa de leitos',
+  'beds.manage': 'Internar, transferir, dar alta e liberar leitos',
+  'triage.perform': 'Realizar classificação de risco',
+  'nursing.vitals': 'Registrar sinais vitais',
+  'nursing.administer': 'Checar administração de medicamentos/cuidados (beira-leito)',
+  'nursing.notes': 'Registrar evolução/anotação de enfermagem',
+  'nursing.sae': 'Elaborar SAE (diagnósticos e intervenções de enfermagem)',
+  'nursing.scales': 'Aplicar escalas (Braden, Morse, Glasgow)',
+  'nursing.fluids': 'Registrar balanço hídrico',
+  'nursing.handoff': 'Registrar passagem de plantão',
 };
 
 const ALL = Object.keys(PERMISSIONS);
@@ -46,7 +61,7 @@ const DEFAULT_ROLES = [
     code: 'recepcao', name: 'Recepção',
     permissions: ['patients.view', 'patients.create', 'patients.edit', 'patients.view_sensitive', 'records.view', 'registry.view',
       'scheduling.view', 'scheduling.manage', 'appointments.view', 'appointments.open', 'accounts.view', 'accounts.edit_items',
-      'payments.view', 'payments.receive', 'settlement.view', 'demo.simulate'],
+      'payments.view', 'payments.receive', 'settlement.view', 'demo.simulate', 'beds.view'],
   },
   {
     code: 'caixa', name: 'Caixa',
@@ -68,6 +83,21 @@ const DEFAULT_ROLES = [
     code: 'fiscal', name: 'Fiscal',
     permissions: ['patients.view', 'patients.view_sensitive', 'appointments.view', 'accounts.view', 'payments.view', 'settlement.view',
       'fiscal.view', 'fiscal.manage', 'fiscal.cancel', 'reports.view', 'reports.export', 'demo.simulate'],
+  },
+  {
+    code: 'medico', name: 'Médico(a)',
+    permissions: ['patients.view', 'patients.view_sensitive', 'records.view', 'registry.view', 'appointments.view', 'clinical.view', 'clinical.allergies',
+      'clinical.notes_medical', 'prescription.write', 'beds.view', 'beds.manage', 'nursing.vitals', 'nursing.scales', 'scheduling.view'],
+  },
+  {
+    code: 'enfermagem', name: 'Enfermagem',
+    permissions: ['patients.view', 'patients.view_sensitive', 'records.view', 'appointments.view', 'clinical.view', 'clinical.allergies', 'beds.view',
+      'beds.manage', 'triage.perform', 'nursing.vitals', 'nursing.administer', 'nursing.notes', 'nursing.sae', 'nursing.scales', 'nursing.fluids',
+      'nursing.handoff', 'scheduling.view'],
+  },
+  {
+    code: 'tecnico_enfermagem', name: 'Técnico(a) de enfermagem',
+    permissions: ['patients.view', 'appointments.view', 'clinical.view', 'beds.view', 'nursing.vitals', 'nursing.administer', 'nursing.notes', 'nursing.fluids'],
   },
   { code: 'admin', name: 'Administração', permissions: ALL },
 ];
