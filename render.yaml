@@ -21,6 +21,10 @@ services:
         value: "true"
       - key: SEED_ON_START
         value: "true"
+      # Senha inicial dos usuários de demonstração: gerada pelo Render (veja em Environment).
+      # Evita que a senha pública do README dê acesso ao sistema publicado.
+      - key: SEED_PASSWORD
+        generateValue: true
       - key: COOKIE_SECURE
         value: "true"
       - key: TRUST_PROXY

@@ -15,7 +15,19 @@ O repositório já tem o arquivo `render.yaml`, que cria automaticamente o banco
 4. Confirme (**Apply**). O Render cria o banco `saude-gestao-db` e o serviço `saude-gestao`.
 5. Aguarde a primeira publicação (alguns minutos). O endereço aparece no topo do serviço,
    no formato `https://saude-gestao-xxxx.onrender.com`.
-6. Entre com `admin@demo.local` / `Demo@12345` (demais usuários no README).
+6. Pegue a senha inicial: no serviço `saude-gestao` → **Environment** → variável **SEED_PASSWORD** (clique para revelar).
+   Entre com `admin@demo.local` e essa senha. (No Render a senha **não** é `Demo@12345`, que é pública no README.)
+
+## Dar acesso a outras pessoas
+1. Entre como administrador → menu **Administração → Usuários e permissões → + Novo usuário**.
+2. Informe nome, e-mail, **perfil** (Recepção, Caixa, Faturamento, Financeiro, Fiscal, Médico, Enfermagem,
+   Técnico de enfermagem ou Administração) e uma senha inicial (mín. 10 caracteres, com letras e números).
+3. Envie à pessoa o link do sistema, o e-mail e a senha inicial por um canal privado.
+4. Cada perfil vê apenas as áreas permitidas. As permissões de cada perfil podem ser ajustadas na matriz
+   da mesma tela, e um usuário pode ser desativado a qualquer momento (as sessões dele são encerradas).
+
+Recomendado depois de publicar: troque a senha do `admin@demo.local` e **desative os usuários de demonstração**
+que não forem usados.
 
 Na primeira subida, o sistema cria as tabelas e os dados fictícios sozinho (`SEED_ON_START=true`).
 A cada novo commit na branch escolhida, o Render publica a nova versão automaticamente.
