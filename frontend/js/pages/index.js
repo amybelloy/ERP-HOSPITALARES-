@@ -1,0 +1,17 @@
+export { dashboard } from './dashboard.js';
+export { patients, patientDetail, records } from './patients.js';
+export { registry } from './registry.js';
+export { scheduling } from './scheduling.js';
+export { appointments, newAppointment } from './appointments.js';
+export { accounts, accountDetail } from './account.js';
+export { cashier, settlement, receivables, billing, openAccounts, closedAccounts } from './finance.js';
+export { fiscal } from './fiscal.js';
+export { reconciliation } from './reconciliation.js';
+export { reports } from './reports.js';
+export { users, audit, settings } from './admin.js';
+export { beds } from './beds.js';
+export { triage } from './triage.js';
+export { pep } from './pep.js';
+export { nursing } from './nursing.js';
+export { boletos } from './boletos.js';
+export { convenioBilling, batches } from './convenio.js';
