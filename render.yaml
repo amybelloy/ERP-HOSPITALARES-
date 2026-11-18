@@ -1,0 +1,37 @@
+# Publicação no Render (https://render.com) — "Blueprint"
+# Cria o banco PostgreSQL e o sistema web a partir deste repositório.
+# Modo DEMONSTRAÇÃO: provedores simulados e dados fictícios. Não use com dados reais de pacientes.
+services:
+  - type: web
+    name: saude-gestao
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: saude-gestao-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      - key: DEMO_MODE
+        value: "true"
+      - key: SEED_ON_START
+        value: "true"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DEMO_WEBHOOK_SECRET
+        generateValue: true
+      - key: CARD_CALLBACK_SECRET
+        generateValue: true
+
+databases:
+  - name: saude-gestao-db
+    plan: free
+    databaseName: hospital
+    user: hospital

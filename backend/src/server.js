@@ -6,6 +6,12 @@ const webhooks = require('./services/webhookService');
 
 async function main() {
   if (process.env.AUTO_MIGRATE !== 'false') await migrate();
+  // Hospedagem de demonstração: cria perfis, usuários e dados fictícios na primeira subida (idempotente)
+  if (process.env.SEED_ON_START === 'true') {
+    const { seedBase, seedDemoData } = require('./db/seed');
+    await seedBase();
+    if (process.env.SEED_DEMO_DATA !== 'false') await seedDemoData();
+  }
   const app = createApp();
   app.listen(config.port, () => {
     console.log(`Saúde Gestão em http://localhost:${config.port}  (DEMO_MODE=${config.demoMode})`);

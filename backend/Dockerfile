@@ -8,5 +8,5 @@ COPY frontend ./frontend
 COPY database ./database
 USER node
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=5s CMD wget -qO- http://localhost:3000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s CMD sh -c 'wget -qO- http://localhost:${PORT:-3000}/health || exit 1'
 CMD ["node", "backend/src/server.js"]

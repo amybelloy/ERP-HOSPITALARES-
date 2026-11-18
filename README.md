@@ -109,6 +109,11 @@ Dependências de runtime: `express`, `pg`, `bcryptjs`, `helmet`, `express-rate-l
 └── .env.example
 ```
 
+## Deixar no ar (endereço na internet)
+
+Veja **[docs/PUBLICAR.md](docs/PUBLICAR.md)**: publicação em poucos cliques no Render com o arquivo `render.yaml`
+(banco + sistema, dados de demonstração criados automaticamente).
+
 ## Abrir no VS Code (no seu computador)
 
 1. Instale o **VS Code**, o **Git** e o **Docker Desktop**.
